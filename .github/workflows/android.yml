@@ -40,7 +40,19 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          cache: gradle
+
+      # Der Gradle-Cache kann sich nicht an Gradle-Dateien hängen: die
+      # entstehen erst beim prebuild weiter unten. Der Schlüssel hängt
+      # deshalb an der npm-Lockdatei — sie bestimmt, welche Expo- und
+      # React-Native-Fassungen und damit welche Gradle-Abhängigkeiten
+      # gezogen werden.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('mobile/package-lock.json') }}
+          restore-keys: gradle-${{ runner.os }}-
 
       - name: Abhängigkeiten installieren
         # --legacy-peer-deps, weil react-dom im Baum eine neuere React-
