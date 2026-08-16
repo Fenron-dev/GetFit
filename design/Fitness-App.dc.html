@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/nocturne-e83b87ab-6207-4992-868a-2818c85dcfea/styles.css">
+<script src="_ds/nocturne-e83b87ab-6207-4992-868a-2818c85dcfea/_ds_bundle.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap">
+<style>body { margin: 0; background: #101220; }</style>
+</helmet>
+<div style="min-height:100vh;padding:56px 56px 72px;box-sizing:border-box;background:radial-gradient(90% 60% at 20% 0%, #1b1e30, #101220 70%);font-family:'Inter',system-ui,sans-serif;color:#e9e9ed">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:40px;flex-wrap:wrap;max-width:1740px">
+    <div style="max-width:640px">
+      <div style="font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:#75798c">UI-Mockup · Fitness &amp; Ernährung</div>
+      <h1 style="font-family:'Inter',system-ui;font-weight:500;font-size:40px;letter-spacing:-.025em;margin:10px 0 0;line-height:1.1">Zehn Screens, ein Tagesrhythmus</h1>
+      <p style="margin:14px 0 0;font-size:14.5px;line-height:1.65;color:#b2b6ca;text-wrap:pretty">Dunkles, ruhiges Interface im Nocturne-Stil: eine Akzentfarbe als Linie und Glow, abgerundete Karten auf desaturiertem Grund, Inter in 500. Alle Screens sind live – Häkchen setzen, Übung und Rezept öffnen, Wochentage im Plan wechseln, Rezepte für den Import auswählen.</p>
+    </div>
+    <div style="display:flex;gap:28px;padding-bottom:6px">
+      <div>
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#75798c">Format</div>
+        <div style="font-size:14px;color:#cfd3e5;margin-top:5px">402 × 874 · Hochformat</div>
+      </div>
+      <div>
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#75798c">Akzent</div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:14px;color:#cfd3e5;margin-top:5px"><span style="width:11px;height:11px;border-radius:99px;background:#9184d9;box-shadow:0 0 0 4px rgba(145,132,217,.18)"></span>{{ accentName }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:44px;display:flex;gap:44px;flex-wrap:nowrap;width:fit-content;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">01</span>
+        <span style="font-size:14px;font-weight:500">Dashboard</span>
+        <span style="font-size:12.5px;color:#75798c">Heute · Fortschritt</span>
+      </div>
+      <dc-import name="FitPhone" screen="dash" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">02</span>
+        <span style="font-size:14px;font-weight:500">Übungen</span>
+        <span style="font-size:12.5px;color:#75798c">Bibliothek · FAB</span>
+      </div>
+      <dc-import name="FitPhone" screen="ex" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">03</span>
+        <span style="font-size:14px;font-weight:500">Übungs-Detail</span>
+        <span style="font-size:12.5px;color:#75798c">GIF-Platzhalter</span>
+      </div>
+      <dc-import name="FitPhone" screen="detail" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">04</span>
+        <span style="font-size:14px;font-weight:500">Mahlzeiten</span>
+        <span style="font-size:12.5px;color:#75798c">nach Kategorie</span>
+      </div>
+      <dc-import name="FitPhone" screen="meals" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+  </div>
+
+  <div style="margin-top:56px;display:flex;align-items:center;gap:14px;width:fit-content">
+    <div style="font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:#75798c">Neu · Rezepte, Pläne, Import</div>
+    <div style="width:280px;height:1px;background:linear-gradient(to right,#3f424d,transparent)"></div>
+  </div>
+
+  <div style="margin-top:24px;display:flex;gap:44px;flex-wrap:nowrap;width:fit-content;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">05</span>
+        <span style="font-size:14px;font-weight:500">Rezept-Detail</span>
+        <span style="font-size:12.5px;color:#75798c">Zutaten · Zubereitung</span>
+      </div>
+      <dc-import name="FitPhone" screen="mealDetail" meal-id="haferbrei" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">06</span>
+        <span style="font-size:14px;font-weight:500">Pläne</span>
+        <span style="font-size:12.5px;color:#75798c">Wochen &amp; Vorlagen</span>
+      </div>
+      <dc-import name="FitPhone" screen="plans" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">07</span>
+        <span style="font-size:14px;font-weight:500">Wochenplan</span>
+        <span style="font-size:12.5px;color:#75798c">Tag wählen · Slots füllen</span>
+      </div>
+      <dc-import name="FitPhone" screen="planDetail" plan-id="w33" day="Mo" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">08</span>
+        <span style="font-size:14px;font-weight:500">Einstellungen</span>
+        <span style="font-size:12.5px;color:#75798c">Einstieg zum Import</span>
+      </div>
+      <dc-import name="FitPhone" screen="settings" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">09</span>
+        <span style="font-size:14px;font-weight:500">Mealie-Import</span>
+        <span style="font-size:12.5px;color:#75798c">Server oder JSON</span>
+      </div>
+      <dc-import name="FitPhone" screen="import" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;width:402px">
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font-size:11px;font-weight:500;padding:3px 7px;border-radius:5px;background:rgba(145,132,217,.16);color:#d2cefd">10</span>
+        <span style="font-size:14px;font-weight:500">Import-Auswahl</span>
+        <span style="font-size:12.5px;color:#75798c">Kategorie-Mapping</span>
+      </div>
+      <dc-import name="FitPhone" screen="importPreview" accent="{{ accent }}" show-kcal="{{ showKcal }}" hint-size="402px,874px"></dc-import>
+    </div>
+  </div>
+
+  <div style="margin-top:52px;display:flex;gap:56px;flex-wrap:wrap;font-size:13px;line-height:1.6;color:#9397ab;max-width:1740px">
+    <div style="max-width:360px"><div style="color:#e4e7f5;font-weight:500;margin-bottom:6px">Annahmen</div>Rezepte und Übungen sind zwei gleich aufgebaute Bibliotheken – gleiche Zeile, gleicher Detail-Aufbau (Bildbereich, Kopf, Fakten-Kacheln, Inhalt). Der Wochenplan greift auf beide zu, statt eigene Einträge zu führen.</div>
+    <div style="max-width:360px"><div style="color:#e4e7f5;font-weight:500;margin-bottom:6px">Navigation</div>Für die Pläne ist ein fünfter Tab dazugekommen; „Einstellungen“ heißt in der Leiste jetzt „Mehr“, damit fünf Labels nebeneinander passen. Der Mealie-Import liegt unter Mehr → Daten und zusätzlich als Zeile über der Rezeptliste.</div>
+    <div style="max-width:360px"><div style="color:#e4e7f5;font-weight:500;margin-bottom:6px">Offen</div>Anlegen-Flow hinter dem „+“, Einkaufsliste aus dem Wochenplan, Konfliktbehandlung bei Duplikaten im Import – sag, was als Nächstes dran ist.</div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#9184d9&quot;,&quot;options&quot;:[&quot;#9184d9&quot;,&quot;#7fd4c1&quot;,&quot;#e0a26a&quot;,&quot;#d98495&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;showKcal&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Inhalt&quot;}}">
+const NAMES = { '#9184d9': 'Blurple', '#7fd4c1': 'Mint', '#e0a26a': 'Amber', '#d98495': 'Rose' };
+
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent || '#9184d9';
+    return {
+      accent,
+      showKcal: this.props.showKcal !== false,
+      accentName: NAMES[accent.toLowerCase()] || accent,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

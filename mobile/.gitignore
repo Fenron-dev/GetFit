@@ -1,0 +1,19 @@
+# Von expo prebuild erzeugt
+android/
+ios/
+
+# Expo
+.expo/
+dist/
+expo-env.d.ts
+
+# Build-Ergebnisse und Schlüssel
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Abhängigkeiten
+node_modules/
+
+.DS_Store

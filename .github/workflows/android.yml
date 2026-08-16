@@ -1,0 +1,90 @@
+name: Android-APK
+
+# Baut die installierbare APK auf GitHubs Runnern — lokal wird dafür
+# weder das Android-SDK noch Gradle gebraucht.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+concurrency:
+  # Ein laufender Build wird abgebrochen, wenn schon der nächste ansteht.
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      # Geheimnisse lassen sich in if-Bedingungen nicht direkt abfragen —
+      # der Umweg über eine Umgebungsvariable ist der verlässliche Weg.
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      # Expos Android-Vorlage baut mit Java 17.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Abhängigkeiten installieren
+        # --legacy-peer-deps, weil react-dom im Baum eine neuere React-
+        # Version verlangt als Expo festlegt. Rein transitiv, ohne Folgen
+        # für die App.
+        run: npm ci --legacy-peer-deps
+
+      - name: Versionsnummer aus der Lauf-Nummer setzen
+        # Android verweigert die Installation, wenn eine neuere Fassung
+        # schon draufliegt. Jeder Lauf zählt deshalb hoch.
+        run: |
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            cfg.expo.android.versionCode = ${{ github.run_number }};
+            fs.writeFileSync('app.json', JSON.stringify(cfg, null, 2) + '\n');
+            console.log('versionCode =', cfg.expo.android.versionCode);
+          "
+
+      - name: Eigenen Schlüssel hinterlegen, falls vorhanden
+        # Ohne dieses Geheimnis signiert Expos Vorlage mit ihrem festen
+        # Debug-Schlüssel — die APK bleibt installierbar und
+        # aktualisierbar, sie taugt nur nicht zur Weitergabe.
+        if: env.HAS_KEYSTORE == 'true'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
+      - name: Natives Projekt erzeugen
+        # Der android/-Ordner steht nicht im Repository, sondern entsteht
+        # bei jedem Lauf aus app.json und den Plugins.
+        run: npx expo prebuild --platform android --no-install
+
+      - name: APK bauen
+        run: ./gradlew assembleRelease --no-daemon
+        working-directory: mobile/android
+
+      - name: APK bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: getfit-apk-${{ github.run_number }}
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,33 @@
+name: Prüfungen
+
+# Schnelle Rückmeldung bei jedem Push: Typen und Bündelung.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Typen prüfen
+        run: npm run typecheck
+
+      - name: Bündelung prüfen
+        # Deckt Importfehler auf, die die Typprüfung nicht sieht.
+        run: npx expo export --platform android --output-dir /tmp/export

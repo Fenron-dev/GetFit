@@ -1,0 +1,20 @@
+# Abhängigkeiten
+node_modules/
+
+# Von expo prebuild erzeugt — entsteht bei jedem Build neu
+mobile/android/
+mobile/ios/
+
+# Build-Ergebnisse
+dist/
+mobile/.expo/
+*.apk
+*.aab
+
+# Schlüssel gehören niemals ins Repository
+*.jks
+*.keystore
+
+# Lokale Umgebung
+.env.local
+.DS_Store
