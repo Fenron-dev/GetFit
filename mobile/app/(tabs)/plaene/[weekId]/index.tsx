@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../../../src/components/Screen';
 import { Text } from '../../../../src/components/Text';
@@ -14,6 +14,8 @@ import {
   getPlanDay,
   getPlanWeek,
   listPlanDays,
+  removePlanTraining,
+  reorderPlanTraining,
 } from '../../../../src/data/repositories/plans';
 import { getExercise } from '../../../../src/data/repositories/exercises';
 import { SLOT_LABELS, getRecipe } from '../../../../src/data/repositories/recipes';
@@ -48,6 +50,37 @@ export default function PlanDetailRoute() {
   }
 
   const kcalSum = detail?.meals.reduce((sum, slot) => sum + (slot.kcal ?? 0), 0) ?? 0;
+
+  /**
+   * Der Griff aus dem Entwurf steht für Umsortieren. Echtes Ziehen
+   * bräuchte Reanimated und Gesture Handler — bis dahin öffnet ein Tipp
+   * dieselben Möglichkeiten als Auswahl, was auch mit einer Hand geht.
+   */
+  function openTrainingActions(itemId: string, name: string, index: number) {
+    const order = detail?.training.map((entry) => entry.id) ?? [];
+
+    function moveTo(target: number) {
+      const next = [...order];
+      const [moved] = next.splice(index, 1);
+      next.splice(target, 0, moved);
+      reorderPlanTraining(weekId, day, next);
+    }
+
+    Alert.alert(name, undefined, [
+      ...(index > 0
+        ? [{ text: 'Nach oben', onPress: () => moveTo(index - 1) }]
+        : []),
+      ...(index < order.length - 1
+        ? [{ text: 'Nach unten', onPress: () => moveTo(index + 1) }]
+        : []),
+      {
+        text: 'Entfernen',
+        style: 'destructive' as const,
+        onPress: () => removePlanTraining(weekId, day, itemId),
+      },
+      { text: 'Abbrechen', style: 'cancel' as const },
+    ]);
+  }
 
   return (
     <Screen variant="detail">
@@ -97,8 +130,13 @@ export default function PlanDetailRoute() {
 
       <SectionHead icon="Barbell" label="Training" note={detail?.note} />
       <View style={styles.list}>
-        {detail?.training.map((item) => (
-          <View key={item.id} style={styles.trainingRow}>
+        {detail?.training.map((item, index) => (
+          <Touchable
+            key={item.id}
+            onPress={() => openTrainingActions(item.id, item.name, index)}
+            accessibilityLabel={`${item.name} bearbeiten`}
+            style={styles.trainingRow}
+          >
             <DotsSixVertical size={16} color={colors.neutral[700]} />
             <View style={styles.grow}>
               <Text variant="rowTitle" style={styles.rowTitle}>
@@ -108,12 +146,14 @@ export default function PlanDetailRoute() {
                 {item.meta}
               </Text>
             </View>
-          </View>
+          </Touchable>
         ))}
         <ActionButton
           label="Übung aus der Bibliothek"
           icon={<Plus size={14} color={colors.neutral[400]} />}
-          onPress={() => router.push('/uebungen')}
+          onPress={() =>
+            router.push(`/plaene/${weekId}/waehlen?tag=${day}&art=uebung`)
+          }
           quiet
         />
       </View>
@@ -127,12 +167,25 @@ export default function PlanDetailRoute() {
         {detail?.meals.map((slot) => (
           <Touchable
             key={slot.slot}
+            // Wie im Entwurf: ein belegter Slot führt zum Rezept. Ändern
+            // und Leeren liegt auf dem langen Druck, ein leerer Slot führt
+            // direkt in die Auswahl.
             onPress={() =>
               slot.recipeId
                 ? router.push(`/mahlzeiten/${slot.recipeId}`)
-                : router.push('/mahlzeiten')
+                : router.push(
+                    `/plaene/${weekId}/waehlen?tag=${day}&art=rezept&slot=${slot.slot}`,
+                  )
+            }
+            onLongPress={() =>
+              router.push(
+                `/plaene/${weekId}/waehlen?tag=${day}&art=rezept&slot=${slot.slot}`,
+              )
             }
             accessibilityLabel={`${SLOT_LABELS[slot.slot]}: ${slot.name}`}
+            accessibilityHint={
+              slot.recipeId ? 'Lang drücken, um das Rezept zu wechseln' : undefined
+            }
             style={[styles.mealRow, slot.recipeId ? styles.mealFilled : styles.mealEmpty]}
           >
             <Text variant="small" color={colors.neutral[600]} style={styles.slotLabel}>

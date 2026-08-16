@@ -48,14 +48,18 @@ export function Card({
 export function Touchable({
   children,
   onPress,
+  onLongPress,
   style,
   accessibilityLabel,
+  accessibilityHint,
   disabled = false,
 }: {
   children?: ReactNode;
   onPress?: () => void;
+  onLongPress?: () => void;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   disabled?: boolean;
 }) {
   const accent = useAccent();
@@ -63,9 +67,11 @@ export function Touchable({
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || !onPress}
+      onLongPress={onLongPress}
+      disabled={disabled || (!onPress && !onLongPress)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
       android_ripple={{ color: tint(accent, '24') }}
       style={[style, styles.clipped, disabled && styles.disabled]}

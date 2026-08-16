@@ -76,13 +76,10 @@ ersetzen, beide behalten).
 Quelltext des Entwurfs, sind aber nie auf einem echten Bildschirm
 gegengelesen worden. React Native rundet manches anders als CSS.
 
-**Wochenplan bearbeiten.** Die Slots führen zur Bibliothek, aber die
-Auswahl schreibt noch nicht zurück in den Tag — `setPlanDayMeal` und
-`addPlanTraining` liegen bereit, es fehlt der Weg dorthin durch die
-Oberfläche.
-
-**Umsortieren im Plan.** Der Griff ist gezeichnet, `reorderPlanTraining`
-existiert, das Ziehen selbst fehlt.
+**Echtes Ziehen im Plan.** Der Griff öffnet derzeit eine Auswahl mit
+„nach oben“, „nach unten“ und „entfernen“. Das ist bedienbar und geht mit
+einer Hand, entspricht aber nicht der Geste, die der Entwurf nahelegt.
+Dafür bräuchte es Reanimated und Gesture Handler.
 
 **Erinnerungen.** Im Entwurf als Einstellung vorgesehen; braucht
 `expo-notifications`.

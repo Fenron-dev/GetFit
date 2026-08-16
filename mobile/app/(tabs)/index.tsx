@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { Text } from '../../src/components/Text';
@@ -6,6 +6,7 @@ import { StreakBand } from '../../src/components/StreakBand';
 import { ProgressCard } from '../../src/components/ProgressCard';
 import { CheckRow } from '../../src/components/CheckRow';
 import { SectionHead } from '../../src/components/SectionHead';
+import { ActionButton } from '../../src/components/ActionButton';
 import { Touchable } from '../../src/components/Surface';
 import { CaretRight } from '../../src/components/icons';
 import { useQuery } from '../../src/hooks/useQuery';
@@ -14,6 +15,7 @@ import {
   dayProgress,
   ensureDayLog,
   loadStreak,
+  resyncDayLog,
   toggleDayEntry,
 } from '../../src/data/repositories/dayLog';
 import { getActiveWeek } from '../../src/data/repositories/plans';
@@ -106,6 +108,30 @@ export default function DashboardRoute() {
         </>
       ) : null}
 
+      {log && log.entries.length > 0 ? (
+        <ActionButton
+          label="Tag aus dem Plan neu laden"
+          quiet
+          onPress={() =>
+            Alert.alert(
+              'Tag neu laden?',
+              'Der Tag wird aus dem Wochenplan neu aufgebaut. Gesetzte Häkchen gehen dabei verloren.',
+              [
+                { text: 'Abbrechen', style: 'cancel' },
+                {
+                  text: 'Neu laden',
+                  style: 'destructive',
+                  onPress: () => {
+                    resyncDayLog(date);
+                  },
+                },
+              ],
+            )
+          }
+          style={styles.resync}
+        />
+      ) : null}
+
       {log && log.entries.length === 0 ? (
         <Text variant="meta" color={colors.neutral[500]} style={styles.empty}>
           Für heute ist nichts geplant. Leg im Wochenplan etwas an oder füge
@@ -134,6 +160,9 @@ const styles = StyleSheet.create({
   list: {
     marginTop: 10,
     gap: 8,
+  },
+  resync: {
+    marginTop: 20,
   },
   empty: {
     marginTop: 24,

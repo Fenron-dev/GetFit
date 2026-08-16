@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
 import { Text } from '../../../src/components/Text';
@@ -9,7 +9,11 @@ import { StatTile } from '../../../src/components/StatTile';
 import { ActionButton } from '../../../src/components/ActionButton';
 import { Plus } from '../../../src/components/icons';
 import { useQuery } from '../../../src/hooks/useQuery';
-import { exerciseMeta, getExercise } from '../../../src/data/repositories/exercises';
+import {
+  deleteExercise,
+  exerciseMeta,
+  getExercise,
+} from '../../../src/data/repositories/exercises';
 import { addDayEntry } from '../../../src/data/repositories/dayLog';
 import { today } from '../../../src/lib/date';
 import { colors, layout } from '../../../src/theme/tokens';
@@ -95,6 +99,25 @@ export default function ExerciseDetailRoute() {
           onPress={addToToday}
           style={styles.action}
         />
+
+        <ActionButton
+          label="Übung löschen"
+          quiet
+          onPress={() =>
+            Alert.alert('Übung löschen?', `„${exercise.name}“ wird entfernt.`, [
+              { text: 'Abbrechen', style: 'cancel' },
+              {
+                text: 'Löschen',
+                style: 'destructive',
+                onPress: async () => {
+                  await deleteExercise(exercise.id);
+                  router.back();
+                },
+              },
+            ])
+          }
+          style={styles.actionQuiet}
+        />
       </View>
     </Screen>
   );
@@ -126,5 +149,8 @@ const styles = StyleSheet.create({
   },
   action: {
     marginTop: 18,
+  },
+  actionQuiet: {
+    marginTop: 8,
   },
 });

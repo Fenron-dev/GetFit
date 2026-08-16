@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
 import { Text } from '../../../src/components/Text';
@@ -11,9 +11,11 @@ import { Touchable } from '../../../src/components/Surface';
 import { CloudCheck, Heart, Plus } from '../../../src/components/icons';
 import { useQuery } from '../../../src/hooks/useQuery';
 import {
+  deleteRecipe,
   getRecipe,
   toggleRecipeFavorite,
 } from '../../../src/data/repositories/recipes';
+import { getActiveWeek } from '../../../src/data/repositories/plans';
 import { formatQuantity } from '../../../src/lib/ingredients';
 import { colors, edge, layout, radius } from '../../../src/theme/tokens';
 import { useTheme } from '../../../src/theme/ThemeProvider';
@@ -155,8 +157,32 @@ export default function RecipeDetailRoute() {
         <ActionButton
           label="In Wochenplan legen"
           icon={<Plus size={16} color={accent} />}
-          onPress={() => router.push('/plaene')}
+          onPress={async () => {
+            // In die laufende Woche springen; dort wird der Slot durch
+            // langes Drücken belegt.
+            const week = await getActiveWeek();
+            router.push(week ? `/plaene/${week.id}` : '/plaene');
+          }}
           style={styles.action}
+        />
+
+        <ActionButton
+          label="Rezept löschen"
+          quiet
+          onPress={() =>
+            Alert.alert('Rezept löschen?', `„${recipe.name}“ wird entfernt.`, [
+              { text: 'Abbrechen', style: 'cancel' },
+              {
+                text: 'Löschen',
+                style: 'destructive',
+                onPress: async () => {
+                  await deleteRecipe(recipe.id);
+                  router.back();
+                },
+              },
+            ])
+          }
+          style={styles.actionQuiet}
         />
       </View>
     </Screen>
@@ -279,5 +305,8 @@ const styles = StyleSheet.create({
   },
   action: {
     marginTop: 22,
+  },
+  actionQuiet: {
+    marginTop: 8,
   },
 });
