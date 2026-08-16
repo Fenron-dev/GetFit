@@ -4,6 +4,7 @@ import { Screen } from '../../../src/components/Screen';
 import { Text } from '../../../src/components/Text';
 import { BackHeader } from '../../../src/components/BackHeader';
 import { MediaBadge, MediaFrame } from '../../../src/components/MediaFrame';
+import { MediaActions } from '../../../src/components/MediaActions';
 import { Chip } from '../../../src/components/Chip';
 import { StatTile } from '../../../src/components/StatTile';
 import { ActionButton } from '../../../src/components/ActionButton';
@@ -13,6 +14,7 @@ import {
   deleteExercise,
   exerciseMeta,
   getExercise,
+  updateExercise,
 } from '../../../src/data/repositories/exercises';
 import { addDayEntry } from '../../../src/data/repositories/dayLog';
 import { today } from '../../../src/lib/date';
@@ -70,10 +72,18 @@ export default function ExerciseDetailRoute() {
       <View style={styles.media}>
         <MediaFrame
           icon={exercise.icon}
+          source={exercise.mediaUrl}
+          contentFit="contain"
           height={250}
           sweep
-          badge={<MediaBadge label="GIF" dot />}
+          placeholderBadge={<MediaBadge label="GIF" dot />}
           progress={{ count: 4, active: 0 }}
+        />
+        <MediaActions
+          ownerId={exercise.id}
+          current={exercise.mediaUrl}
+          label="GIF"
+          onChange={(uri) => updateExercise(exercise.id, { mediaUrl: uri })}
         />
       </View>
 

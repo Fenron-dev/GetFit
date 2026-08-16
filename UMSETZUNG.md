@@ -92,10 +92,11 @@ von allein. Für eine selbst installierte App verschmerzbar; falls es
 stört, lässt sich das Set auf die knapp 30 tatsächlich verwendeten
 Symbole eindampfen.
 
-**Rezeptbilder aus Mealie.** Die liegen als URL auf dem Server. Solange
-das Handy nicht im Heimnetz ist, zeigt die App den Platzhalter aus dem
-Mockup. Alternative wäre, die Bilder beim Import mitzunehmen und lokal
-abzulegen — kostet Speicher, macht die App aber unabhängig. Offen.
+**Rezeptbilder aus Mealie.** Die liegen als URL auf dem Server; unterwegs
+sind sie nicht erreichbar und die App fällt auf den Platzhalter zurück.
+Über „Foto → Adresse“ lässt sich ein Bild dauerhaft übernehmen. Ein
+automatisches Mitnehmen beim Import wäre möglich, kostet aber Speicher —
+offen.
 
 **Erinnerungen.** Der Einstellungs-Screen sieht „Erinnerungen · 08:00“
 vor. Dafür braucht es `expo-notifications` und eine Berechtigung. Noch

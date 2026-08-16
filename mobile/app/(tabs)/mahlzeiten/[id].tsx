@@ -4,6 +4,7 @@ import { Screen } from '../../../src/components/Screen';
 import { Text } from '../../../src/components/Text';
 import { BackHeader } from '../../../src/components/BackHeader';
 import { MediaBadge, MediaFrame } from '../../../src/components/MediaFrame';
+import { MediaActions } from '../../../src/components/MediaActions';
 import { Chip } from '../../../src/components/Chip';
 import { StatTile } from '../../../src/components/StatTile';
 import { ActionButton } from '../../../src/components/ActionButton';
@@ -14,6 +15,7 @@ import {
   deleteRecipe,
   getRecipe,
   toggleRecipeFavorite,
+  updateRecipe,
 } from '../../../src/data/repositories/recipes';
 import { getActiveWeek } from '../../../src/data/repositories/plans';
 import { formatQuantity } from '../../../src/lib/ingredients';
@@ -75,10 +77,11 @@ export default function RecipeDetailRoute() {
       <View style={styles.media}>
         <MediaFrame
           icon={recipe.icon}
+          source={recipe.imageUrl}
           height={210}
           iconSize={92}
           breathDuration={3200}
-          badge={<MediaBadge label="FOTO" icon="Image" />}
+          placeholderBadge={<MediaBadge label="FOTO" icon="Image" />}
           topRight={
             recipe.source === 'mealie' ? (
               <View style={styles.sourceBadge}>
@@ -89,6 +92,12 @@ export default function RecipeDetailRoute() {
               </View>
             ) : undefined
           }
+        />
+        <MediaActions
+          ownerId={recipe.id}
+          current={recipe.imageUrl}
+          label="Foto"
+          onChange={(uri) => updateRecipe(recipe.id, { imageUrl: uri })}
         />
       </View>
 

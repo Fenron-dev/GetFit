@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { GradientBox, RadialFill } from './Gradient';
 import { Icon } from './icons';
 import { Text } from './Text';
@@ -7,9 +8,13 @@ import { colors, radius } from '../theme/tokens';
 import { useAccent } from '../theme/ThemeProvider';
 
 /**
- * Der Medienbereich der Detailseiten. Bild oder GIF gibt es noch nicht —
- * der Entwurf zeigt stattdessen das Symbol der Übung bzw. des Rezepts in
- * einem Glow, mit drei Bewegungen:
+ * Der Medienbereich der Detailseiten.
+ *
+ * Liegt ein Bild oder GIF vor, wird es gezeigt — expo-image spielt GIF
+ * und WebP von sich aus ab, ein Ablauf ist also wirklich zu sehen.
+ *
+ * Fehlt es, greift der Platzhalter aus dem Entwurf: das Symbol in einem
+ * Glow, mit drei Bewegungen:
  *
  *   fitBreath  das Symbol atmet (Deckkraft und Größe)
  *   fitSweep   ein Lichtstreifen wandert darüber (nur beim GIF-Platz)
@@ -41,8 +46,10 @@ function useLoop(duration: number, enabled = true) {
 
 export function MediaFrame({
   icon,
+  source,
+  contentFit = 'cover',
   height,
-  badge,
+  placeholderBadge,
   topRight,
   progress,
   sweep = false,
@@ -50,19 +57,37 @@ export function MediaFrame({
   iconSize = 110,
 }: {
   icon: string;
+  /** Bild, GIF oder Video-Standbild. Fehlt es, kommt der Platzhalter. */
+  source?: string;
+  contentFit?: 'cover' | 'contain';
   height: number;
-  /** Die Marke oben links: „GIF“ mit Punkt oder „FOTO“ mit Bildsymbol. */
-  badge?: ReactNode;
+  /**
+   * Die Marke oben links: „GIF“ mit Punkt oder „FOTO“ mit Bildsymbol.
+   * Gehört zum Platzhalter und erscheint nur, solange nichts zu sehen
+   * ist — auch dann, wenn ein Medium zwar gesetzt ist, sich aber nicht
+   * laden lässt.
+   */
+  placeholderBadge?: ReactNode;
   topRight?: ReactNode;
-  /** Der Streifen unten: wie viele Abschnitte, welcher ist aktiv. */
+  /** Der Streifen unten, ebenfalls Teil des Platzhalters. */
   progress?: { count: number; active: number };
   sweep?: boolean;
   breathDuration?: number;
   iconSize?: number;
 }) {
   const accent = useAccent();
-  const breath = useLoop(breathDuration);
-  const sweepValue = useLoop(2800, sweep);
+  // Ein Rezeptbild aus Mealie liegt auf dem heimischen Server; unterwegs
+  // ist es nicht erreichbar. Scheitert das Laden, tritt der Platzhalter
+  // wieder ein, statt eine leere Fläche stehen zu lassen.
+  const [failed, setFailed] = useState(false);
+  const hasMedia = Boolean(source) && !failed;
+
+  useEffect(() => {
+    setFailed(false);
+  }, [source]);
+  // Platzhalter-Bewegungen laufen nur, solange es nichts zu zeigen gibt.
+  const breath = useLoop(breathDuration, !hasMedia);
+  const sweepValue = useLoop(2800, sweep && !hasMedia);
 
   // Der Entwurf lässt das Symbol zwischen 0,35 und 0,75 Deckkraft und
   // 0,97 und 1,02 Größe schwingen — einmal hin, einmal zurück.
@@ -84,23 +109,38 @@ export function MediaFrame({
       style={[styles.frame, { height }]}
       gradient={<RadialFill from={colors.accent[900]} to={colors.neutral[900]} />}
     >
-      <View style={styles.center}>
-        <Animated.View style={{ opacity, transform: [{ scale }] }}>
-          <Icon name={icon} size={iconSize} color={accent} weight="fill" />
-        </Animated.View>
-      </View>
+      {hasMedia ? (
+        <Image
+          source={{ uri: source }}
+          style={styles.image}
+          contentFit={contentFit}
+          transition={200}
+          // GIF und WebP laufen von allein; ein Standbild bleibt stehen.
+          autoplay
+          onError={() => setFailed(true)}
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <View style={styles.center}>
+          <Animated.View style={{ opacity, transform: [{ scale }] }}>
+            <Icon name={icon} size={iconSize} color={accent} weight="fill" />
+          </Animated.View>
+        </View>
+      )}
 
-      {sweep ? (
+      {sweep && !hasMedia ? (
         <Animated.View
           style={[styles.sweep, { transform: [{ translateX: sweepShift }] }]}
           pointerEvents="none"
         />
       ) : null}
 
-      {badge ? <View style={styles.badgeSlot}>{badge}</View> : null}
+      {placeholderBadge && !hasMedia ? (
+        <View style={styles.badgeSlot}>{placeholderBadge}</View>
+      ) : null}
       {topRight ? <View style={styles.topRightSlot}>{topRight}</View> : null}
 
-      {progress ? (
+      {progress && !hasMedia ? (
         <View style={styles.progress}>
           {Array.from({ length: progress.count }, (_, index) => (
             <View
@@ -155,6 +195,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.media,
     borderWidth: 1,
     borderColor: colors.neutral[800],
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   center: {
     position: 'absolute',
