@@ -50,33 +50,50 @@ und die Persistenz sind neu.
 - **Verpackung** — App-Icon, adaptives Android-Icon, Splash, `eas.json`
   mit APK-Profil, Cleartext-Freigabe für den Mealie-Abruf.
 
-## Reihenfolge des Weiterbaus
+## Alle zehn Screens sind gebaut
 
-**1 — Geteilte Bausteine.** ✓ erledigt.
+| # | Screen | Zustand |
+|---|---|---|
+| 01 | Dashboard | Streak-Band, Fortschritt, Abhaken |
+| 02 | Übungen | Suche, Bibliothek, Anlegen |
+| 03 | Übungs-Detail | GIF-Platzhalter, Fakten, zum Tag hinzufügen |
+| 04 | Mahlzeiten | vier Gruppen, Import-Einstieg |
+| 05 | Rezept-Detail | Tags, Makros, Zutaten, Zubereitung |
+| 06 | Pläne | Wochenkarten, Vorlagen übernehmen |
+| 07 | Wochenplan | Tageswahl, Training, vier Slots, duplizieren |
+| 08 | Einstellungen | kcal-Schalter, Akzentwahl, Sicherung |
+| 09 | Mealie-Import | Server und Datei |
+| 10 | Import-Auswahl | Auswahl, Kategorien, Konflikte |
 
-**2 — Die beiden Bibliotheken.** ✓ erledigt: Screens 02, 03, 04 und 05.
-Es fehlt noch die Checkbox-Zeile, die erst das Dashboard braucht.
+Dazu die drei Ergänzungen, die im Entwurf offen waren: der Anlegen-Flow
+hinter dem „+“ für Übungen und Rezepte, die Einkaufsliste aus dem
+Wochenplan und die Duplikat-Auflösung beim Import (überspringen,
+ersetzen, beide behalten).
 
-**3 — Dashboard.** Screen 01 braucht das Tages-Log, das aus dem Plan
-entsteht — also nach den Bibliotheken.
+## Was noch aussteht
 
-**4 — Pläne.** Screens 06 und 07, inklusive Duplizieren und Vorlagen.
+**Feinschliff am Gerät.** Abstände und Proportionen stammen aus dem
+Quelltext des Entwurfs, sind aber nie auf einem echten Bildschirm
+gegengelesen worden. React Native rundet manches anders als CSS.
 
-**5 — Einstellungen und Import.** Screens 08, 09 und 10.
+**Wochenplan bearbeiten.** Die Slots führen zur Bibliothek, aber die
+Auswahl schreibt noch nicht zurück in den Tag — `setPlanDayMeal` und
+`addPlanTraining` liegen bereit, es fehlt der Weg dorthin durch die
+Oberfläche.
 
-**6 — Die drei Ergänzungen.** Anlegen-Formulare, Einkaufsliste,
-Konfliktauflösung in der Import-Auswahl.
+**Umsortieren im Plan.** Der Griff ist gezeichnet, `reorderPlanTraining`
+existiert, das Ziehen selbst fehlt.
 
-**7 — Feinschliff.** Übergänge, leere Zustände, Zurück-Geste,
-Bildschirmleser-Beschriftungen, erste APK aufs Handy.
+**Erinnerungen.** Im Entwurf als Einstellung vorgesehen; braucht
+`expo-notifications`.
 
 ## Offene Punkte
 
-**Bündelgröße.** Der JavaScript-Anteil liegt bei rund 9 MB, ein guter
-Teil davon ist das vollständige Phosphor-Icon-Set — Metro entfernt
-Ungenutztes nicht von allein. Für eine selbst installierte App ist das
-verschmerzbar; falls es stört, lässt sich das Set auf die tatsächlich
-verwendeten Symbole eindampfen.
+**Bündelgröße.** Die fertige APK liegt bei 45 MB, ein guter Teil davon
+ist das vollständige Phosphor-Icon-Set — Metro entfernt Ungenutztes nicht
+von allein. Für eine selbst installierte App verschmerzbar; falls es
+stört, lässt sich das Set auf die knapp 30 tatsächlich verwendeten
+Symbole eindampfen.
 
 **Rezeptbilder aus Mealie.** Die liegen als URL auf dem Server. Solange
 das Handy nicht im Heimnetz ist, zeigt die App den Platzhalter aus dem

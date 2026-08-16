@@ -148,3 +148,17 @@ export async function loadStreak(
   const logs = await stores.dayLogs.getMany(dates);
   return dates.map((date, index) => ({ date, level: streakLevel(logs[index]) }));
 }
+
+/**
+ * Die Länge der laufenden Serie: wie viele Tage in Folge bis heute wurde
+ * mindestens ein Eintrag erledigt. Ein Tag ohne jede Erledigung beendet
+ * die Serie — halb zählt, gar nicht zählt nicht.
+ */
+export function currentStreak(days: { level: StreakLevel }[]): number {
+  let count = 0;
+  for (let index = days.length - 1; index >= 0; index -= 1) {
+    if (days[index].level === 'low') break;
+    count += 1;
+  }
+  return count;
+}

@@ -1,5 +1,5 @@
 import type { Ingredient, ShoppingItem } from '../types/domain';
-import { newId } from '../data/db';
+import { newId } from './id';
 
 /**
  * Mengenangaben kommen als Freitext herein — aus dem Mockup ("60 g",

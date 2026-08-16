@@ -266,11 +266,4 @@ export async function transaction(work: () => Promise<void>): Promise<void> {
   notifyChange();
 }
 
-/** Kurze, sortierbare ID ohne externe Abhängigkeit. */
-export function newId(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export function now(): number {
-  return Date.now();
-}
+export { newId, now } from '../lib/id';

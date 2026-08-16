@@ -16,6 +16,7 @@ import {
   DotsSixVertical,
   Egg,
   Fish,
+  Flame,
   ForkKnife,
   Heart,
   Image as ImageIcon,
@@ -54,6 +55,7 @@ const REGISTRY = {
   DotsSixVertical,
   Egg,
   Fish,
+  Flame,
   ForkKnife,
   Heart,
   Image: ImageIcon,
@@ -91,6 +93,7 @@ export function Icon({
 
 export {
   ArrowLeft,
+  Flame,
   CaretRight,
   Check,
   CloudArrowDown,
