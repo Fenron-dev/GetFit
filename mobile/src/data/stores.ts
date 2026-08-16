@@ -21,6 +21,7 @@ export const stores = {
     muscleGroup: (item) => item.muscleGroup,
     source: (item) => item.source,
     favorite: (item) => (item.favorite ? 1 : 0),
+    externalId: (item) => item.externalId ?? null,
   }),
 
   recipes: new Store<Recipe>('recipes', 'id', {

@@ -514,5 +514,6 @@ export const DEFAULT_SETTINGS: Settings = {
   units: 'metric',
   reminderTime: '08:00',
   mealie: { baseUrl: '', token: '' },
+  exerciseDb: { apiKey: '' },
   updatedAt: T0,
 };

@@ -19,12 +19,15 @@ export function MediaActions({
   current,
   label,
   onChange,
+  extra,
 }: {
   ownerId: string;
   current?: string;
   /** „GIF“ bei Übungen, „Foto“ bei Rezepten. */
   label: string;
   onChange: (uri: string | undefined) => Promise<void> | void;
+  /** Weitere Knöpfe in derselben Zeile — bei Übungen die ExerciseDB-Suche. */
+  extra?: React.ReactNode;
 }) {
   const accent = useAccent();
   const [urlOpen, setUrlOpen] = useState(false);
@@ -101,6 +104,8 @@ export function MediaActions({
           </Text>
         </Touchable>
 
+        {extra}
+
         {current ? (
           <Touchable onPress={clear} style={styles.button} accessibilityLabel={`${label} entfernen`}>
             <Text variant="small" color={colors.neutral[500]}>
@@ -163,6 +168,8 @@ function messageOf(error: unknown): string {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 8,
     marginTop: 10,
   },

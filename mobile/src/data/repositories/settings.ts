@@ -1,10 +1,27 @@
 import { now } from '../db';
 import { stores } from '../stores';
 import { DEFAULT_SETTINGS } from '../seed';
-import type { MealieConnection, Settings } from '../../types/domain';
+import type {
+  ExerciseDbConnection,
+  MealieConnection,
+  Settings,
+} from '../../types/domain';
 
+/**
+ * Die Einstellungen werden über die Vorgaben gelegt, nicht bloß gelesen.
+ * Eine ältere Installation kennt neu hinzugekommene Blöcke sonst nicht
+ * und liefe beim Zugriff darauf ins Leere.
+ */
 export async function getSettings(): Promise<Settings> {
-  return (await stores.settings.get('settings')) ?? DEFAULT_SETTINGS;
+  const stored = await stores.settings.get('settings');
+  if (!stored) return DEFAULT_SETTINGS;
+
+  return {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    mealie: { ...DEFAULT_SETTINGS.mealie, ...stored.mealie },
+    exerciseDb: { ...DEFAULT_SETTINGS.exerciseDb, ...stored.exerciseDb },
+  };
 }
 
 export async function updateSettings(
@@ -19,4 +36,11 @@ export async function updateMealieConnection(
 ): Promise<void> {
   const current = await getSettings();
   await updateSettings({ mealie: { ...current.mealie, ...patch } });
+}
+
+export async function updateExerciseDbConnection(
+  patch: Partial<ExerciseDbConnection>,
+): Promise<void> {
+  const current = await getSettings();
+  await updateSettings({ exerciseDb: { ...current.exerciseDb, ...patch } });
 }

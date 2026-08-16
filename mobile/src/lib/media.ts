@@ -60,9 +60,14 @@ export async function pickMediaFile(ownerId: string): Promise<string | null> {
 
 /**
  * Datei von einer Adresse holen und ablegen. Für GIFs, die man im Netz
- * oder auf dem eigenen Server gefunden hat.
+ * oder auf dem eigenen Server gefunden hat — und für die Bilder von
+ * ExerciseDB, deren Server denselben Schlüssel sehen will wie die API.
  */
-export async function downloadMedia(ownerId: string, url: string): Promise<string> {
+export async function downloadMedia(
+  ownerId: string,
+  url: string,
+  headers?: Record<string, string>,
+): Promise<string> {
   const address = url.trim();
   if (!/^https?:\/\//i.test(address)) {
     throw new Error('Die Adresse muss mit http:// oder https:// beginnen.');
@@ -73,7 +78,10 @@ export async function downloadMedia(ownerId: string, url: string): Promise<strin
     `${ownerId}-${Date.now()}.${extensionOf(address)}`,
   );
 
-  const downloaded = await File.downloadFileAsync(address, target);
+  const downloaded = await File.downloadFileAsync(address, target, {
+    headers,
+    idempotent: true,
+  });
   if (!downloaded.exists || (downloaded.size ?? 0) === 0) {
     throw new Error('Unter dieser Adresse kam keine Datei an.');
   }

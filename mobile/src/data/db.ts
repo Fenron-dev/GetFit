@@ -13,7 +13,7 @@ import * as SQLite from 'expo-sqlite';
  */
 
 const DATABASE_NAME = 'getfit.db';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 let database: SQLite.SQLiteDatabase | null = null;
 
@@ -24,9 +24,11 @@ const SCHEMA = `
     muscleGroup TEXT,
     source TEXT,
     favorite INTEGER DEFAULT 0,
+    externalId TEXT,
     data TEXT NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_exercises_name ON exercises (name);
+  CREATE INDEX IF NOT EXISTS idx_exercises_external ON exercises (externalId);
 
   CREATE TABLE IF NOT EXISTS recipes (
     id TEXT PRIMARY KEY NOT NULL,
@@ -93,9 +95,19 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
     'PRAGMA user_version',
   );
   const current = row?.user_version ?? 0;
+
+  // Je ein Schritt pro Version, damit eine bestehende Installation ihre
+  // Daten behält. Das CREATE oben legt neue Datenbanken gleich richtig
+  // an; hier wird nur nachgezogen, was schon existiert.
+  if (current > 0 && current < 2) {
+    // Fassung 2: Kennung der Übung bei ExerciseDB.
+    await handle.execAsync(`
+      ALTER TABLE exercises ADD COLUMN externalId TEXT;
+      CREATE INDEX IF NOT EXISTS idx_exercises_external ON exercises (externalId);
+    `);
+  }
+
   if (current < SCHEMA_VERSION) {
-    // Erste Fassung — künftige Schritte kommen hierhin, je einer pro
-    // Version, damit eine bestehende Installation nichts verliert.
     await handle.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   }
 

@@ -35,8 +35,10 @@ export interface Exercise {
   description: string;
   /** Phosphor-Icon-Name aus dem Mockup, z. B. "PersonSimpleWalk". */
   icon: string;
-  /** Platzhalter im Mockup; später eine echte GIF-/Video-Quelle. */
+  /** Lokal abgelegtes GIF, Bild oder Video, das den Ablauf zeigt. */
   mediaUrl?: string;
+  /** Kennung bei ExerciseDB — der Schlüssel für die Duplikat-Prüfung. */
+  externalId?: string;
   source: RecordSource;
   favorite: boolean;
   createdAt: number;
@@ -209,6 +211,13 @@ export interface MealieConnection {
   lastImportSkipped?: number;
 }
 
+export interface ExerciseDbConnection {
+  /** Persönlicher RapidAPI-Schlüssel. Bleibt auf dem Gerät. */
+  apiKey: string;
+  lastImportAt?: number;
+  lastImportCount?: number;
+}
+
 export interface Settings {
   /** Einzeiliger Datensatz, Schlüssel ist immer "settings". */
   id: 'settings';
@@ -224,6 +233,7 @@ export interface Settings {
   /** "08:00" */
   reminderTime: string;
   mealie: MealieConnection;
+  exerciseDb: ExerciseDbConnection;
   updatedAt: number;
 }
 
