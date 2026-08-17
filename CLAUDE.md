@@ -90,6 +90,22 @@ Nach größeren Änderungen `npx expo export --platform android` laufen
 lassen — das bündelt vollständig und deckt Importfehler auf, die die
 Typprüfung nicht sieht.
 
+## Übungsdaten
+
+1.324 Übungen liegen als abgespeckter Index in
+`mobile/assets/data/exercises-index.json` — MIT-lizenzierte Daten aus
+`github.com/Fenron-dev/exercises-dataset`. Suche und Import laufen
+deshalb offline.
+
+Die GIFs stehen **nicht** unter MIT (© Gym visual) und liegen nicht in
+der App. Sie werden einzeln aus dem Datensatz-Repository geholt und
+lokal abgelegt; jede so bebilderte Übung führt die vorgeschriebene
+Angabe in `mediaAttribution` mit und zeigt sie an. Ein selbst gesetztes
+Bild löscht sie mit.
+
+Der Abruf läuft der Reihe nach mit Pause — GitHub begrenzt die Anfragen
+je Adresse.
+
 ## Mealie
 
 Zwei Wege, bewusst redundant:

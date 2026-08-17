@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { Screen } from '../../../src/components/Screen';
@@ -12,15 +12,18 @@ import {
 import { Icon } from '../../../src/components/icons';
 import { ActionButton } from '../../../src/components/ActionButton';
 import { useQuery } from '../../../src/hooks/useQuery';
-import {
-  updateExerciseDbConnection,
-  updateSettings,
-} from '../../../src/data/repositories/settings';
+import { updateSettings } from '../../../src/data/repositories/settings';
 import { writeBackupFile } from '../../../src/data/bootstrap';
 import { stores } from '../../../src/data/stores';
 import { datasetSize } from '../../../src/lib/dataset';
+import {
+  cancelReminder,
+  formatTime,
+  parseTime,
+  scheduleReminder,
+} from '../../../src/lib/reminders';
 import { datasetIdOf, fetchMissingGifs } from '../../../src/lib/dataset/import';
-import { accentLabels, accents, colors, edge, fonts, radius } from '../../../src/theme/tokens';
+import { accentLabels, accents, colors, edge, radius } from '../../../src/theme/tokens';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import type { AccentKey } from '../../../src/types/domain';
 
@@ -29,8 +32,6 @@ export default function SettingsRoute() {
   const router = useRouter();
   const { settings, accent } = useTheme();
   const [busy, setBusy] = useState(false);
-  const [keyOpen, setKeyOpen] = useState(false);
-  const [apiKey, setApiKey] = useState(settings.exerciseDb.apiKey);
 
   const { data: recipeCount } = useQuery(() => stores.recipes.count(), []);
 
@@ -55,6 +56,20 @@ export default function SettingsRoute() {
         ? `${pending} offen`
         : 'vollständig',
   };
+
+  /**
+   * Die Uhrzeit wird in Halbstundenschritten weitergedreht statt über
+   * einen Auswahldialog: eine tägliche Erinnerung wird einmal gesetzt und
+   * dann kaum noch angefasst, dafür lohnt kein eigener Screen.
+   */
+  async function shiftReminderTime() {
+    const { hour, minute } = parseTime(settings.reminderTime);
+    const total = (hour * 60 + minute + 30) % (24 * 60);
+    const next = formatTime(Math.floor(total / 60), total % 60);
+
+    await updateSettings({ reminderTime: next });
+    if (settings.reminderEnabled) await scheduleReminder(next);
+  }
 
   async function loadGifs() {
     setLoadingGifs(true);
@@ -155,25 +170,41 @@ export default function SettingsRoute() {
           onPress={gifState.pending > 0 && !loadingGifs ? loadGifs : undefined}
         />
         <SettingsRow
-          icon="MagnifyingGlass"
-          label="Übungen aus ExerciseDB"
-          value={settings.exerciseDb.apiKey ? 'bereit' : 'Schlüssel fehlt'}
-          onPress={() => router.push('/mehr/uebungen-import')}
-        />
-        <SettingsRow
-          icon="CloudCheck"
-          label="ExerciseDB-Schlüssel"
-          value={settings.exerciseDb.apiKey ? 'hinterlegt' : 'nicht gesetzt'}
-          onPress={() => {
-            setApiKey(settings.exerciseDb.apiKey);
-            setKeyOpen(true);
-          }}
-        />
-        <SettingsRow
           icon="Copy"
           label={busy ? 'Wird erstellt…' : 'Daten sichern'}
           value="JSON"
           onPress={busy ? undefined : exportData}
+          last
+        />
+      </SettingsGroup>
+
+      <SettingsGroup label="Erinnerung">
+        <SettingsSwitch
+          icon="Flame"
+          label="Täglich erinnern"
+          value={settings.reminderEnabled}
+          onChange={async (next) => {
+            if (!next) {
+              await cancelReminder();
+              await updateSettings({ reminderEnabled: false });
+              return;
+            }
+            const state = await scheduleReminder(settings.reminderTime);
+            if (state === 'verweigert') {
+              Alert.alert(
+                'Keine Erlaubnis',
+                'Android lässt keine Benachrichtigungen zu. Das lässt sich in den Systemeinstellungen der App ändern.',
+              );
+              return;
+            }
+            await updateSettings({ reminderEnabled: true });
+          }}
+        />
+        <SettingsRow
+          icon="Copy"
+          label="Uhrzeit"
+          value={settings.reminderTime}
+          onPress={() => shiftReminderTime()}
           last
         />
       </SettingsGroup>
@@ -206,51 +237,6 @@ export default function SettingsRoute() {
         Version 0.1 · alle Daten auf diesem Gerät
       </Text>
 
-      <Modal
-        visible={keyOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setKeyOpen(false)}
-      >
-        <View style={styles.backdrop}>
-          <View style={styles.dialog}>
-            <Text variant="rowTitle">ExerciseDB-Schlüssel</Text>
-            <Text variant="meta" color={colors.neutral[500]} style={styles.dialogBody}>
-              Kostenlos über RapidAPI: dort das Angebot „ExerciseDB“
-              abonnieren und den persönlichen Schlüssel hier einsetzen. Er
-              bleibt auf diesem Gerät.
-            </Text>
-
-            <TextInput
-              value={apiKey}
-              onChangeText={setApiKey}
-              placeholder="X-RapidAPI-Key"
-              placeholderTextColor={colors.neutral[700]}
-              style={styles.input}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-            />
-
-            <View style={styles.dialogActions}>
-              <ActionButton
-                label="Abbrechen"
-                quiet
-                onPress={() => setKeyOpen(false)}
-                style={styles.dialogButton}
-              />
-              <ActionButton
-                label="Speichern"
-                onPress={async () => {
-                  await updateExerciseDbConnection({ apiKey: apiKey.trim() });
-                  setKeyOpen(false);
-                }}
-                style={styles.dialogButton}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
     </Screen>
   );
 }
@@ -298,32 +284,4 @@ const styles = StyleSheet.create({
     marginTop: 22,
     textAlign: 'center',
   },
-  backdrop: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: 'rgba(11,12,20,0.72)',
-  },
-  dialog: {
-    width: '100%',
-    padding: 18,
-    borderRadius: radius.cardLg,
-    backgroundColor: colors.surface,
-    ...edge(colors.neutral[700]),
-  },
-  dialogBody: { marginTop: 6, lineHeight: 19 },
-  input: {
-    marginTop: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: radius.md + 2,
-    borderWidth: 1,
-    borderColor: colors.neutral[800],
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.text,
-  },
-  dialogActions: { flexDirection: 'row', gap: 8, marginTop: 16 },
-  dialogButton: { flex: 1 },
 });

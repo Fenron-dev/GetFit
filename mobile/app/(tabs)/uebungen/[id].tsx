@@ -6,7 +6,6 @@ import { Text } from '../../../src/components/Text';
 import { BackHeader } from '../../../src/components/BackHeader';
 import { MediaBadge, MediaFrame } from '../../../src/components/MediaFrame';
 import { MediaActions } from '../../../src/components/MediaActions';
-import { ExerciseDbGifPicker } from '../../../src/components/ExerciseDbGifPicker';
 import { Chip } from '../../../src/components/Chip';
 import { StatTile } from '../../../src/components/StatTile';
 import { ActionButton } from '../../../src/components/ActionButton';
@@ -120,9 +119,6 @@ export default function ExerciseDetailRoute() {
           label="GIF"
           onChange={(uri) =>
             updateExercise(exercise.id, { mediaUrl: uri, mediaAttribution: undefined })
-          }
-          extra={
-            <ExerciseDbGifPicker exerciseId={exercise.id} suggestion={exercise.name} />
           }
         />
 

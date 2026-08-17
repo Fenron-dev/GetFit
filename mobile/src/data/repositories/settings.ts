@@ -1,11 +1,7 @@
 import { now } from '../db';
 import { stores } from '../stores';
 import { DEFAULT_SETTINGS } from '../seed';
-import type {
-  ExerciseDbConnection,
-  MealieConnection,
-  Settings,
-} from '../../types/domain';
+import type { MealieConnection, Settings } from '../../types/domain';
 
 /**
  * Die Einstellungen werden über die Vorgaben gelegt, nicht bloß gelesen.
@@ -20,7 +16,6 @@ export async function getSettings(): Promise<Settings> {
     ...DEFAULT_SETTINGS,
     ...stored,
     mealie: { ...DEFAULT_SETTINGS.mealie, ...stored.mealie },
-    exerciseDb: { ...DEFAULT_SETTINGS.exerciseDb, ...stored.exerciseDb },
   };
 }
 
@@ -36,11 +31,4 @@ export async function updateMealieConnection(
 ): Promise<void> {
   const current = await getSettings();
   await updateSettings({ mealie: { ...current.mealie, ...patch } });
-}
-
-export async function updateExerciseDbConnection(
-  patch: Partial<ExerciseDbConnection>,
-): Promise<void> {
-  const current = await getSettings();
-  await updateSettings({ exerciseDb: { ...current.exerciseDb, ...patch } });
 }

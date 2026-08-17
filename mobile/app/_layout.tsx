@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 // Gezielt die drei genutzten Schnitte einbinden. Über den Paketnamen
 // allein landen alle 36 Inter-Varianten im APK — rund 12 MB, von denen
@@ -54,18 +55,30 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    // Gesten müssen von der Wurzel aus erkannt werden — sonst reagiert
+    // das Ziehen im Wochenplan nicht.
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.bg },
+            }}
+          >
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   center: {
     flex: 1,
     alignItems: 'center',

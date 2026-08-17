@@ -69,13 +69,6 @@ Downloads auf, bleibt die Anzeige stehen.
 Ein selbst gesetztes Bild löscht die Gym-visual-Angabe mit, weil sie dann
 nicht mehr zutrifft.
 
-## ExerciseDB (optional)
-
-Der Weg über ExerciseDB ist weiter vorhanden, wird durch den Datensatz
-aber überflüssig: er braucht einen RapidAPI-Schlüssel, hat ein monatliches
-Kontingent und liefert dieselben Übungen. Wer ihn trotzdem will, trägt den
-Schlüssel unter *Mehr → ExerciseDB-Schlüssel* ein.
-
 ## Was die App abspielt
 
 GIF und animiertes WebP laufen von allein — den Ablauf siehst du also

@@ -513,7 +513,7 @@ export const DEFAULT_SETTINGS: Settings = {
   trainingsPerWeek: 4,
   units: 'metric',
   reminderTime: '08:00',
+  reminderEnabled: false,
   mealie: { baseUrl: '', token: '' },
-  exerciseDb: { apiKey: '' },
   updatedAt: T0,
 };

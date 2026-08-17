@@ -6,6 +6,7 @@ import { BackHeader } from '../../../../src/components/BackHeader';
 import { SectionHead } from '../../../../src/components/SectionHead';
 import { ActionButton } from '../../../../src/components/ActionButton';
 import { Touchable } from '../../../../src/components/Surface';
+import { DraggableList } from '../../../../src/components/DraggableList';
 import { Copy, DotsSixVertical, Icon, Plus } from '../../../../src/components/icons';
 import { useQuery } from '../../../../src/hooks/useQuery';
 import {
@@ -129,15 +130,21 @@ export default function PlanDetailRoute() {
       </View>
 
       <SectionHead icon="Barbell" label="Training" note={detail?.note} />
-      <View style={styles.list}>
-        {detail?.training.map((item, index) => (
+      <DraggableList
+        items={detail?.training ?? []}
+        keyOf={(item) => item.id}
+        onReorder={(orderedIds) => reorderPlanTraining(weekId, day, orderedIds)}
+        renderItem={(item, index, handle) => (
           <Touchable
-            key={item.id}
             onPress={() => openTrainingActions(item.id, item.name, index)}
             accessibilityLabel={`${item.name} bearbeiten`}
+            accessibilityHint="Am Griff links ziehen, um die Reihenfolge zu ändern"
             style={styles.trainingRow}
           >
-            <DotsSixVertical size={16} color={colors.neutral[700]} />
+            <View>
+              <DotsSixVertical size={16} color={colors.neutral[700]} />
+              {handle}
+            </View>
             <View style={styles.grow}>
               <Text variant="rowTitle" style={styles.rowTitle}>
                 {item.name}
@@ -147,7 +154,9 @@ export default function PlanDetailRoute() {
               </Text>
             </View>
           </Touchable>
-        ))}
+        )}
+      />
+      <View style={styles.list}>
         <ActionButton
           label="Übung aus der Bibliothek"
           icon={<Plus size={14} color={colors.neutral[400]} />}

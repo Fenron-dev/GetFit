@@ -77,11 +77,6 @@ ersetzen, beide behalten).
 Quelltext des Entwurfs, sind aber nie auf einem echten Bildschirm
 gegengelesen worden. React Native rundet manches anders als CSS.
 
-**Echtes Ziehen im Plan.** Der Griff öffnet derzeit eine Auswahl mit
-„nach oben“, „nach unten“ und „entfernen“. Das ist bedienbar und geht mit
-einer Hand, entspricht aber nicht der Geste, die der Entwurf nahelegt.
-Dafür bräuchte es Reanimated und Gesture Handler.
-
 **Erinnerungen.** Im Entwurf als Einstellung vorgesehen; braucht
 `expo-notifications`.
 

@@ -42,7 +42,7 @@ export interface Exercise {
    * dort gezeigt, wo das Bild erscheint.
    */
   mediaAttribution?: string;
-  /** Kennung bei ExerciseDB — der Schlüssel für die Duplikat-Prüfung. */
+  /** Kennung im Übungsdatensatz ("ds:0001") — für die Duplikat-Prüfung. */
   externalId?: string;
   source: RecordSource;
   favorite: boolean;
@@ -216,13 +216,6 @@ export interface MealieConnection {
   lastImportSkipped?: number;
 }
 
-export interface ExerciseDbConnection {
-  /** Persönlicher RapidAPI-Schlüssel. Bleibt auf dem Gerät. */
-  apiKey: string;
-  lastImportAt?: number;
-  lastImportCount?: number;
-}
-
 export interface Settings {
   /** Einzeiliger Datensatz, Schlüssel ist immer "settings". */
   id: 'settings';
@@ -237,8 +230,9 @@ export interface Settings {
   units: 'metric' | 'imperial';
   /** "08:00" */
   reminderTime: string;
+  /** Ob die tägliche Erinnerung gestellt ist. */
+  reminderEnabled: boolean;
   mealie: MealieConnection;
-  exerciseDb: ExerciseDbConnection;
   updatedAt: number;
 }
 
