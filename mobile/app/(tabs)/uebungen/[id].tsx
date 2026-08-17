@@ -1,4 +1,5 @@
-import { Alert, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
 import { Text } from '../../../src/components/Text';
@@ -19,6 +20,7 @@ import {
 } from '../../../src/data/repositories/exercises';
 import { addDayEntry } from '../../../src/data/repositories/dayLog';
 import { today } from '../../../src/lib/date';
+import { datasetIdOf, fetchDatasetGif } from '../../../src/lib/dataset/import';
 import { colors, layout } from '../../../src/theme/tokens';
 import { useAccent } from '../../../src/theme/ThemeProvider';
 
@@ -28,6 +30,29 @@ export default function ExerciseDetailRoute() {
   const router = useRouter();
   const accent = useAccent();
   const { data: exercise, loading } = useQuery(() => getExercise(id), [id]);
+
+  /**
+   * Stammt die Übung aus dem Datensatz und fehlt ihr noch das GIF, wird
+   * es beim ersten Öffnen einmal geholt. Der Versuch wird gemerkt, damit
+   * ein Fehlschlag nicht bei jedem Blick erneut ins Netz greift.
+   */
+  const [loadingGif, setLoadingGif] = useState(false);
+  const tried = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!exercise || exercise.mediaUrl) return;
+    const datasetId = datasetIdOf(exercise.externalId);
+    if (!datasetId || tried.current.has(exercise.id)) return;
+
+    tried.current.add(exercise.id);
+    setLoadingGif(true);
+    fetchDatasetGif(exercise.id, datasetId)
+      .catch(() => {
+        // Kein Netz oder Sperre — der Platzhalter bleibt, die Knöpfe
+        // darunter erlauben den zweiten Versuch.
+      })
+      .finally(() => setLoadingGif(false));
+  }, [exercise]);
 
   if (loading) {
     return (
@@ -80,15 +105,32 @@ export default function ExerciseDetailRoute() {
           placeholderBadge={<MediaBadge label="GIF" dot />}
           progress={{ count: 4, active: 0 }}
         />
+        {loadingGif ? (
+          <View style={styles.gifLoading}>
+            <ActivityIndicator size="small" color={accent} />
+            <Text variant="small" color={colors.neutral[500]}>
+              GIF wird geladen…
+            </Text>
+          </View>
+        ) : null}
+
         <MediaActions
           ownerId={exercise.id}
           current={exercise.mediaUrl}
           label="GIF"
-          onChange={(uri) => updateExercise(exercise.id, { mediaUrl: uri })}
+          onChange={(uri) =>
+            updateExercise(exercise.id, { mediaUrl: uri, mediaAttribution: undefined })
+          }
           extra={
             <ExerciseDbGifPicker exerciseId={exercise.id} suggestion={exercise.name} />
           }
         />
+
+        {exercise.mediaAttribution ? (
+          <Text variant="small" color={colors.neutral[600]} style={styles.attribution}>
+            {exercise.mediaAttribution}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.content}>
@@ -165,6 +207,15 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   actionQuiet: {
+    marginTop: 8,
+  },
+  gifLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  attribution: {
     marginTop: 8,
   },
 });

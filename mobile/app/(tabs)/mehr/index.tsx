@@ -18,6 +18,8 @@ import {
 } from '../../../src/data/repositories/settings';
 import { writeBackupFile } from '../../../src/data/bootstrap';
 import { stores } from '../../../src/data/stores';
+import { datasetSize } from '../../../src/lib/dataset';
+import { datasetIdOf, fetchMissingGifs } from '../../../src/lib/dataset/import';
 import { accentLabels, accents, colors, edge, fonts, radius } from '../../../src/theme/tokens';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import type { AccentKey } from '../../../src/types/domain';
@@ -31,6 +33,51 @@ export default function SettingsRoute() {
   const [apiKey, setApiKey] = useState(settings.exerciseDb.apiKey);
 
   const { data: recipeCount } = useQuery(() => stores.recipes.count(), []);
+
+  // Wie viele Übungen aus dem Datensatz warten noch auf ihr GIF?
+  const { data: pendingGifs } = useQuery(async () => {
+    const all = await stores.exercises.all();
+    return all.filter(
+      (exercise) => !exercise.mediaUrl && datasetIdOf(exercise.externalId),
+    ).length;
+  }, []);
+
+  const [loadingGifs, setLoadingGifs] = useState(false);
+  const [gifProgress, setGifProgress] = useState<string>();
+
+  const pending = pendingGifs ?? 0;
+  const gifState = {
+    pending,
+    label: loadingGifs ? 'GIFs werden geladen…' : 'GIFs nachladen',
+    value: loadingGifs
+      ? (gifProgress ?? '')
+      : pending > 0
+        ? `${pending} offen`
+        : 'vollständig',
+  };
+
+  async function loadGifs() {
+    setLoadingGifs(true);
+    try {
+      const result = await fetchMissingGifs((done, total) =>
+        setGifProgress(`${done} von ${total}`),
+      );
+      Alert.alert(
+        'GIFs geladen',
+        [
+          `${result.loaded} geladen`,
+          result.failed ? `${result.failed} nicht erreichbar` : null,
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      );
+    } catch (error) {
+      Alert.alert('Abbruch', error instanceof Error ? error.message : String(error));
+    } finally {
+      setLoadingGifs(false);
+      setGifProgress(undefined);
+    }
+  }
 
   const lastImport = settings.mealie.lastImportCount;
 
@@ -96,9 +143,21 @@ export default function SettingsRoute() {
         />
         <SettingsRow
           icon="Barbell"
+          label="Übungen übernehmen"
+          value={`${datasetSize()} verfügbar`}
+          accented
+          onPress={() => router.push('/mehr/uebungen-datensatz')}
+        />
+        <SettingsRow
+          icon="Image"
+          label={gifState.label}
+          value={gifState.value}
+          onPress={gifState.pending > 0 && !loadingGifs ? loadGifs : undefined}
+        />
+        <SettingsRow
+          icon="MagnifyingGlass"
           label="Übungen aus ExerciseDB"
           value={settings.exerciseDb.apiKey ? 'bereit' : 'Schlüssel fehlt'}
-          accented={Boolean(settings.exerciseDb.apiKey)}
           onPress={() => router.push('/mehr/uebungen-import')}
         />
         <SettingsRow

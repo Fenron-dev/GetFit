@@ -37,6 +37,11 @@ export interface Exercise {
   icon: string;
   /** Lokal abgelegtes GIF, Bild oder Video, das den Ablauf zeigt. */
   mediaUrl?: string;
+  /**
+   * Pflichtangabe zum Bild, falls die Quelle eine verlangt. Wird überall
+   * dort gezeigt, wo das Bild erscheint.
+   */
+  mediaAttribution?: string;
   /** Kennung bei ExerciseDB — der Schlüssel für die Duplikat-Prüfung. */
   externalId?: string;
   source: RecordSource;

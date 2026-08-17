@@ -10,6 +10,7 @@ Stand: 16. August 2026.
 | Verteilung | APK über EAS bauen, direkt aufs Handy — kein Store, kein Hosting |
 | Daten | Ausschließlich lokal in SQLite, kein Server, kein Sync |
 | Mealie | JSON-Import als Hauptweg, direkter Server-Abruf im WLAN als Komfortweg; importiert wird nur die getroffene Auswahl |
+| Übungen | 1.324 Übungen liegen als MIT-Daten in der App; die GIFs (© Gym visual) werden einzeln aus dem Fork geholt und lokal abgelegt |
 | Umfang | Alle zehn Screens mit echter Persistenz |
 | Zusätzlich | Anlegen-Flow hinter dem „+“, Einkaufsliste aus dem Wochenplan, Duplikat-Behandlung beim Import |
 
