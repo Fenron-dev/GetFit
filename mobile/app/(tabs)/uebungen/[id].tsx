@@ -9,7 +9,8 @@ import { MediaActions } from '../../../src/components/MediaActions';
 import { Chip } from '../../../src/components/Chip';
 import { StatTile } from '../../../src/components/StatTile';
 import { ActionButton } from '../../../src/components/ActionButton';
-import { Plus } from '../../../src/components/icons';
+import { Touchable } from '../../../src/components/Surface';
+import { Icon, Plus } from '../../../src/components/icons';
 import { useQuery } from '../../../src/hooks/useQuery';
 import {
   deleteExercise,
@@ -20,14 +21,15 @@ import {
 import { addDayEntry } from '../../../src/data/repositories/dayLog';
 import { today } from '../../../src/lib/date';
 import { datasetIdOf, fetchDatasetGif } from '../../../src/lib/dataset/import';
-import { colors, layout } from '../../../src/theme/tokens';
-import { useAccent } from '../../../src/theme/ThemeProvider';
+import { colors, layout, radius } from '../../../src/theme/tokens';
+import { useAccent, useTheme } from '../../../src/theme/ThemeProvider';
 
 /** Screen 03 — Übungs-Detail mit GIF-Platzhalter. */
 export default function ExerciseDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const accent = useAccent();
+  const { settings } = useTheme();
   const { data: exercise, loading } = useQuery(() => getExercise(id), [id]);
 
   /**
@@ -77,6 +79,53 @@ export default function ExerciseDetailRoute() {
       ? `${exercise.restSeconds / 60} Min`
       : `${exercise.restSeconds}s`;
 
+  /**
+   * Der Verbrauch wird von Hand gesetzt. Als Anhalt schlägt die App einen
+   * Wert vor, der sich aus Körpergewicht und geschätzter Dauer ergibt —
+   * eine Faustregel, kein Messwert, deshalb änderbar.
+   */
+  function askKcal(current: NonNullable<typeof exercise>) {
+    const minutes = Math.max(
+      2,
+      Math.round((current.defaultSets * (45 + current.restSeconds)) / 60),
+    );
+    // 6 MET entspricht mäßig anstrengendem Krafttraining.
+    const suggestion = settings.weightKg
+      ? Math.round((6 * settings.weightKg * minutes) / 60)
+      : undefined;
+
+    Alert.alert(
+      'Verbrauch je Durchgang',
+      suggestion
+        ? `Etwa ${minutes} Minuten bei ${settings.weightKg} kg — geschätzt ${suggestion} kcal.`
+        : 'Trag im Profil dein Gewicht ein, dann schlägt die App einen Wert vor.',
+      [
+        ...(suggestion
+          ? [
+              {
+                text: `${suggestion} kcal übernehmen`,
+                onPress: () => {
+                  updateExercise(current.id, { kcalBurn: suggestion });
+                },
+              },
+            ]
+          : []),
+        ...(current.kcalBurn
+          ? [
+              {
+                text: 'Wert entfernen',
+                style: 'destructive' as const,
+                onPress: () => {
+                  updateExercise(current.id, { kcalBurn: undefined });
+                },
+              },
+            ]
+          : []),
+        { text: 'Abbrechen', style: 'cancel' as const },
+      ],
+    );
+  }
+
   async function addToToday() {
     if (!exercise) return;
     await addDayEntry(today(), {
@@ -84,6 +133,7 @@ export default function ExerciseDetailRoute() {
       refId: exercise.id,
       title: exercise.name,
       meta: `${exercise.defaultSets} Sätze · ${exercise.defaultReps}`,
+      kcal: exercise.kcalBurn,
     });
     router.push('/');
   }
@@ -145,6 +195,23 @@ export default function ExerciseDetailRoute() {
           <StatTile label="Pause" value={restLabel} />
         </View>
 
+        <Touchable
+          onPress={() => askKcal(exercise)}
+          accessibilityLabel="Kalorienverbrauch bearbeiten"
+          style={styles.kcalRow}
+        >
+          <Icon name="Flame" size={15} color={exercise.kcalBurn ? accent : colors.neutral[600]} />
+          <Text variant="meta" style={styles.grow}>
+            Verbrauch je Durchgang
+          </Text>
+          <Text
+            variant="meta"
+            color={exercise.kcalBurn ? colors.text : colors.neutral[600]}
+          >
+            {exercise.kcalBurn ? `${exercise.kcalBurn} kcal` : 'nicht gesetzt'}
+          </Text>
+        </Touchable>
+
         <ActionButton
           label="Zum Heute-Plan hinzufügen"
           icon={<Plus size={16} color={accent} />}
@@ -205,6 +272,18 @@ const styles = StyleSheet.create({
   actionQuiet: {
     marginTop: 8,
   },
+  kcalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 13,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.neutral[800],
+  },
+  grow: { flex: 1 },
   gifLoading: {
     flexDirection: 'row',
     alignItems: 'center',

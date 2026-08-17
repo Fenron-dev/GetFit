@@ -10,16 +10,20 @@ import { DraggableList } from '../../../../src/components/DraggableList';
 import { Copy, DotsSixVertical, Icon, Plus } from '../../../../src/components/icons';
 import { useQuery } from '../../../../src/hooks/useQuery';
 import {
+  addPlanMeal,
   duplicatePlanWeek,
   formatWeekRange,
   getPlanDay,
   getPlanWeek,
   listPlanDays,
+  removePlanMeal,
   removePlanTraining,
   reorderPlanTraining,
+  setPlanMeal,
 } from '../../../../src/data/repositories/plans';
 import { getExercise } from '../../../../src/data/repositories/exercises';
 import { SLOT_LABELS, getRecipe } from '../../../../src/data/repositories/recipes';
+import { LOCATION_LABELS } from '../../../../src/data/repositories/stock';
 import {
   DAY_KEYS,
   MEAL_SLOTS,
@@ -51,6 +55,56 @@ export default function PlanDetailRoute() {
   }
 
   const kcalSum = detail?.meals.reduce((sum, slot) => sum + (slot.kcal ?? 0), 0) ?? 0;
+
+  function openPicker(entryId: string, slot: MealSlot) {
+    router.push(
+      `/plaene/${weekId}/waehlen?tag=${day}&art=rezept&eintrag=${entryId}&slot=${slot}`,
+    );
+  }
+
+  async function addMeal() {
+    // Ein zusätzlicher Eintrag beginnt als Snack — das ist der Fall, für
+    // den man ihn am häufigsten braucht.
+    const entryId = await addPlanMeal(weekId, day, 'snack');
+    openPicker(entryId, 'snack');
+  }
+
+  /** Portionen, Kategorie, Rezept und Entfernen für einen Eintrag. */
+  function openMealActions(entry: {
+    id: string;
+    slot: MealSlot;
+    servings: number;
+    recipeId: string | null;
+  }) {
+    Alert.alert(SLOT_LABELS[entry.slot], undefined, [
+      {
+        text: entry.recipeId ? 'Rezept wechseln' : 'Rezept wählen',
+        onPress: () => openPicker(entry.id, entry.slot),
+      },
+      {
+        text: `Portionen: ${entry.servings} → ${(entry.servings % 4) + 1}`,
+        onPress: () => {
+          setPlanMeal(weekId, day, entry.id, { servings: (entry.servings % 4) + 1 });
+        },
+      },
+      {
+        text: 'Kategorie wechseln',
+        onPress: () => {
+          const next =
+            MEAL_SLOTS[(MEAL_SLOTS.indexOf(entry.slot) + 1) % MEAL_SLOTS.length];
+          setPlanMeal(weekId, day, entry.id, { slot: next });
+        },
+      },
+      {
+        text: 'Entfernen',
+        style: 'destructive' as const,
+        onPress: () => {
+          removePlanMeal(weekId, day, entry.id);
+        },
+      },
+      { text: 'Abbrechen', style: 'cancel' as const },
+    ]);
+  }
 
   /**
    * Der Griff aus dem Entwurf steht für Umsortieren. Echtes Ziehen
@@ -170,51 +224,73 @@ export default function PlanDetailRoute() {
       <SectionHead
         icon="ForkKnife"
         label="Ernährung"
-        note={settings.showKcal && kcalSum > 0 ? `${kcalSum} kcal` : undefined}
+        note={settings.showKcal && kcalSum > 0 ? `${Math.round(kcalSum)} kcal` : undefined}
       />
       <View style={styles.list}>
-        {detail?.meals.map((slot) => (
+        {detail?.meals.map((entry) => (
           <Touchable
-            key={slot.slot}
-            // Wie im Entwurf: ein belegter Slot führt zum Rezept. Ändern
-            // und Leeren liegt auf dem langen Druck, ein leerer Slot führt
-            // direkt in die Auswahl.
+            key={entry.id}
+            // Wie im Entwurf: ein belegter Eintrag führt zum Rezept.
+            // Ändern, Portionen und Entfernen liegen auf dem langen Druck.
             onPress={() =>
-              slot.recipeId
-                ? router.push(`/mahlzeiten/${slot.recipeId}`)
-                : router.push(
-                    `/plaene/${weekId}/waehlen?tag=${day}&art=rezept&slot=${slot.slot}`,
-                  )
+              entry.recipeId
+                ? router.push(`/plaene/${weekId}/rezept/${entry.recipeId}`)
+                : openPicker(entry.id, entry.slot)
             }
-            onLongPress={() =>
-              router.push(
-                `/plaene/${weekId}/waehlen?tag=${day}&art=rezept&slot=${slot.slot}`,
-              )
-            }
-            accessibilityLabel={`${SLOT_LABELS[slot.slot]}: ${slot.name}`}
-            accessibilityHint={
-              slot.recipeId ? 'Lang drücken, um das Rezept zu wechseln' : undefined
-            }
-            style={[styles.mealRow, slot.recipeId ? styles.mealFilled : styles.mealEmpty]}
+            onLongPress={() => openMealActions(entry)}
+            accessibilityLabel={`${SLOT_LABELS[entry.slot]}: ${entry.name}`}
+            accessibilityHint="Lang drücken für Portionen, Uhrzeit und Entfernen"
+            style={[styles.mealRow, entry.recipeId ? styles.mealFilled : styles.mealEmpty]}
           >
-            <Text variant="small" color={colors.neutral[600]} style={styles.slotLabel}>
-              {SLOT_LABELS[slot.slot]}
-            </Text>
-            <Text
-              variant="rowTitle"
-              color={slot.recipeId ? colors.text : colors.neutral[600]}
-              style={[styles.grow, styles.rowTitle, !slot.recipeId && styles.slotEmpty]}
-              numberOfLines={1}
-            >
-              {slot.name}
-            </Text>
-            {settings.showKcal && slot.kcal !== undefined ? (
+            <View style={styles.slotColumn}>
+              <Text variant="small" color={colors.neutral[600]} style={styles.slotLabel}>
+                {SLOT_LABELS[entry.slot]}
+              </Text>
+              {entry.time ? (
+                <Text variant="small" color={colors.neutral[700]}>
+                  {entry.time}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.grow}>
+              <Text
+                variant="rowTitle"
+                color={entry.recipeId ? colors.text : colors.neutral[600]}
+                style={styles.rowTitle}
+                numberOfLines={1}
+              >
+                {entry.name}
+              </Text>
+              {entry.recipeId ? (
+                <Text variant="small" color={colors.neutral[600]} style={styles.rowMeta}>
+                  {[
+                    entry.servings > 1 ? `${entry.servings} Portionen` : null,
+                    entry.fromStockId ? 'aus dem Vorrat' : null,
+                    entry.prep
+                      ? `+${entry.prep.portions} ${LOCATION_LABELS[entry.prep.location]}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || null}
+                </Text>
+              ) : null}
+            </View>
+
+            {settings.showKcal && entry.kcal !== undefined ? (
               <Text variant="meta" color={colors.neutral[500]}>
-                {slot.kcal} kcal
+                {Math.round(entry.kcal)} kcal
               </Text>
             ) : null}
           </Touchable>
         ))}
+
+        <ActionButton
+          label="Mahlzeit hinzufügen"
+          icon={<Plus size={14} color={colors.neutral[400]} />}
+          onPress={addMeal}
+          quiet
+        />
       </View>
 
       <ActionButton
@@ -253,21 +329,23 @@ async function loadDay(weekId: string, day: DayKey) {
           id: item.id,
           name: exercise?.name ?? 'Unbekannte Übung',
           meta: `${item.sets} Sätze · ${item.reps}${repsSuffix}`,
+          kcalBurn: exercise?.kcalBurn,
         };
       }),
   );
 
   const meals = await Promise.all(
-    MEAL_SLOTS.map(async (slot: MealSlot) => {
-      const recipeId = planDay.meals[slot];
-      const recipe = recipeId ? await getRecipe(recipeId) : undefined;
-      return {
-        slot,
-        recipeId: recipe?.id ?? null,
-        name: recipe?.name ?? 'Rezept wählen',
-        kcal: recipe?.nutrition.kcal,
-      };
-    }),
+    [...planDay.meals]
+      .sort((a, b) => a.order - b.order)
+      .map(async (entry) => {
+        const recipe = entry.recipeId ? await getRecipe(entry.recipeId) : undefined;
+        const perPortion = recipe?.nutrition.kcal;
+        return {
+          ...entry,
+          name: recipe?.name ?? 'Rezept wählen',
+          kcal: perPortion !== undefined ? perPortion * entry.servings : undefined,
+        };
+      }),
   );
 
   return { note: planDay.note || undefined, training, meals };
@@ -315,7 +393,8 @@ const styles = StyleSheet.create({
   },
   mealFilled: { backgroundColor: colors.surface, ...edge() },
   mealEmpty: { borderWidth: 1, borderColor: colors.neutral[800] },
-  slotLabel: { width: 52, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6 },
+  slotColumn: { width: 56, flexShrink: 0, gap: 2 },
+  slotLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6 },
   slotEmpty: { fontWeight: '400' },
   action: { marginTop: 18 },
   actionQuiet: { marginTop: 8 },

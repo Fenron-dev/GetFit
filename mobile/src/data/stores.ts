@@ -8,6 +8,7 @@ import type {
   Recipe,
   Settings,
   ShoppingList,
+  StockItem,
 } from '../types/domain';
 
 /**
@@ -49,6 +50,12 @@ export const stores = {
   shoppingLists: new Store<ShoppingList>('shopping_lists', 'id', {
     weekId: (item) => item.weekId,
     createdAt: (item) => item.createdAt,
+  }),
+
+  stock: new Store<StockItem>('stock', 'id', {
+    recipeId: (item) => item.recipeId,
+    location: (item) => item.location,
+    bestBefore: (item) => item.bestBefore,
   }),
 
   settings: new Store<Settings>('settings', 'id'),

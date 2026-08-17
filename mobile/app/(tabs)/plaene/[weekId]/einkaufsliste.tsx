@@ -1,4 +1,5 @@
 import { Alert, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Screen } from '../../../../src/components/Screen';
 import { Text } from '../../../../src/components/Text';
@@ -27,6 +28,7 @@ import { useAccent } from '../../../../src/theme/ThemeProvider';
 export default function ShoppingListRoute() {
   const { weekId } = useLocalSearchParams<{ weekId: string }>();
   const accent = useAccent();
+  const [scope, setScope] = useState<'woche' | 'werktage'>('woche');
 
   const { data: week } = useQuery(() => getPlanWeek(weekId), [weekId]);
   const { data: lists } = useQuery(() => listShoppingLists(weekId), [weekId]);
@@ -48,19 +50,47 @@ export default function ShoppingListRoute() {
       <Text variant="sectionTitle">Einkaufsliste</Text>
       <Text variant="meta" color={colors.neutral[500]} style={styles.subtitle}>
         {list
-          ? `${list.items.length} Positionen · ${done.length} erledigt`
-          : 'Aus den verplanten Rezepten dieser Woche'}
+          ? `${list.items.length} Positionen · ${done.length} erledigt · ${
+              list.days.length === 0 ? 'ganze Woche' : `${list.days.length} Tage`
+            }`
+          : 'Was gekocht wird, ergibt die Liste — Portionen inbegriffen'}
       </Text>
 
       {!list ? (
-        <ActionButton
-          label="Liste erzeugen"
-          icon={<Icon name="Basket" size={16} color={accent} />}
-          onPress={async () => {
-            await generateShoppingList(weekId);
-          }}
-          style={styles.action}
-        />
+        <>
+          <View style={styles.scope}>
+            {(['woche', 'werktage'] as const).map((option) => (
+              <Touchable
+                key={option}
+                onPress={() => setScope(option)}
+                accessibilityLabel={option === 'woche' ? 'Ganze Woche' : 'Nur Mo bis Fr'}
+                style={[
+                  styles.scopeChip,
+                  { borderColor: scope === option ? accent : colors.neutral[800] },
+                ]}
+              >
+                <Text
+                  variant="meta"
+                  color={scope === option ? colors.accent[200] : colors.neutral[500]}
+                >
+                  {option === 'woche' ? 'Ganze Woche' : 'Mo bis Fr'}
+                </Text>
+              </Touchable>
+            ))}
+          </View>
+
+          <ActionButton
+            label="Liste erzeugen"
+            icon={<Icon name="Basket" size={16} color={accent} />}
+            onPress={async () => {
+              await generateShoppingList(
+                weekId,
+                scope === 'woche' ? [] : ['Mo', 'Di', 'Mi', 'Do', 'Fr'],
+              );
+            }}
+            style={styles.action}
+          />
+        </>
       ) : list.items.length === 0 ? (
         <Text variant="meta" color={colors.neutral[500]} style={styles.empty}>
           In dieser Woche ist noch kein Rezept eingeplant — deshalb gibt es
@@ -144,6 +174,14 @@ const styles = StyleSheet.create({
   origin: { marginTop: 2 },
   struck: { textDecorationLine: 'line-through' },
   quantity: { fontVariant: ['tabular-nums'] },
-  action: { marginTop: 18 },
+  scope: { flexDirection: 'row', gap: 8, marginTop: 18 },
+  scopeChip: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: radius.card,
+    borderWidth: 1,
+  },
+  action: { marginTop: 10 },
   empty: { marginTop: 24, textAlign: 'center', lineHeight: 20 },
 });

@@ -7,6 +7,7 @@ import {
   type DayKey,
   type MealSlot,
   type PlanDay,
+  type PlanMealEntry,
   type PlanTemplate,
   type PlanWeek,
 } from '../../types/domain';
@@ -39,11 +40,15 @@ export async function getActiveWeek(): Promise<PlanWeek | undefined> {
   );
 }
 
-function emptyMeals(): Record<MealSlot, string | null> {
-  return Object.fromEntries(MEAL_SLOTS.map((slot) => [slot, null])) as Record<
-    MealSlot,
-    string | null
-  >;
+/** Ein frischer Tag beginnt mit den vier gewohnten, noch leeren Slots. */
+function emptyMeals(dayId: string): PlanMealEntry[] {
+  return MEAL_SLOTS.map((slot, index) => ({
+    id: `${dayId}:${slot}`,
+    slot,
+    recipeId: null,
+    order: index,
+    servings: 1,
+  }));
 }
 
 /** Legt eine Woche mit ihren sieben — zunächst leeren — Tagen an. */
@@ -73,7 +78,7 @@ export async function createPlanWeek(options: {
       day,
       note: '',
       training: [],
-      meals: emptyMeals(),
+      meals: emptyMeals(`${id}:${day}`),
     })),
   );
 
@@ -130,17 +135,55 @@ export async function duplicatePlanWeek(weekId: string): Promise<string> {
   return id;
 }
 
-export async function setPlanDayMeal(
+/** Belegt einen vorhandenen Mahlzeiten-Eintrag oder leert ihn. */
+export async function setPlanMeal(
   weekId: string,
   day: DayKey,
-  slot: MealSlot,
-  recipeId: string | null,
+  entryId: string,
+  patch: Partial<Omit<PlanMealEntry, 'id'>>,
 ): Promise<void> {
   const planDay = await getPlanDay(weekId, day);
   if (!planDay) return;
   await stores.planDays.put({
     ...planDay,
-    meals: { ...planDay.meals, [slot]: recipeId },
+    meals: planDay.meals.map((entry) =>
+      entry.id === entryId ? { ...entry, ...patch } : entry,
+    ),
+  });
+}
+
+/** Hängt einen weiteren Eintrag an — der zweite Snack am Nachmittag. */
+export async function addPlanMeal(
+  weekId: string,
+  day: DayKey,
+  slot: MealSlot,
+): Promise<string> {
+  const planDay = await getPlanDay(weekId, day);
+  if (!planDay) throw new Error('Tag nicht gefunden');
+
+  const id = newId('meal');
+  await stores.planDays.put({
+    ...planDay,
+    meals: [
+      ...planDay.meals,
+      { id, slot, recipeId: null, order: planDay.meals.length, servings: 1 },
+    ],
+  });
+  return id;
+}
+
+export async function removePlanMeal(
+  weekId: string,
+  day: DayKey,
+  entryId: string,
+): Promise<void> {
+  const planDay = await getPlanDay(weekId, day);
+  if (!planDay) return;
+  await stores.planDays.put({
+    ...planDay,
+    meals: planDay.meals
+      .filter((entry) => entry.id !== entryId)
+      .map((entry, index) => ({ ...entry, order: index })),
   });
 }
 
@@ -231,7 +274,10 @@ export async function applyTemplate(
           id: newId('pt'),
           order: index,
         })),
-        meals: { ...planDay.meals, ...source.meals },
+        meals: planDay.meals.map((entry) => {
+          const fromTemplate = source.meals?.[entry.slot];
+          return fromTemplate ? { ...entry, recipeId: fromTemplate } : entry;
+        }),
       };
     }),
   );
@@ -247,7 +293,7 @@ export function dayFillFlags(days: PlanDay[]): boolean[] {
     if (!planDay) return false;
     return (
       planDay.training.length > 0 ||
-      MEAL_SLOTS.some((slot) => planDay.meals[slot] !== null)
+      planDay.meals.some((entry) => entry.recipeId !== null)
     );
   });
 }

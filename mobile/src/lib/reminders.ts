@@ -79,6 +79,49 @@ export async function scheduleReminder(time: string): Promise<ReminderState> {
   return 'aktiv';
 }
 
+const STOCK_IDENTIFIER = 'getfit-vorrat';
+
+/**
+ * Meldet, was im Vorrat bald weg muss. Läuft zur selben Zeit wie die
+ * tägliche Erinnerung, aber als eigene Meldung — sonst müsste man den
+ * Text der einen ständig umschreiben.
+ *
+ * Die Meldung wird bei jedem Öffnen der App neu gestellt, weil sich der
+ * Inhalt täglich ändert. Ohne Vorräte, die drängen, wird sie gelöscht.
+ */
+export async function scheduleStockReminder(
+  time: string,
+  urgent: { recipeName: string; portions: number }[],
+): Promise<void> {
+  await Notifications.cancelScheduledNotificationAsync(STOCK_IDENTIFIER).catch(() => {});
+  if (urgent.length === 0) return;
+
+  const permissions = await Notifications.getPermissionsAsync();
+  if (!permissions.granted) return;
+  await ensureChannel();
+
+  const first = urgent[0];
+  const rest = urgent.length - 1;
+  const { hour, minute } = parseTime(time);
+
+  await Notifications.scheduleNotificationAsync({
+    identifier: STOCK_IDENTIFIER,
+    content: {
+      title: 'Aus dem Vorrat',
+      body:
+        `${first.portions} ${first.portions === 1 ? 'Portion' : 'Portionen'} ${first.recipeName} sollten weg` +
+        (rest > 0 ? ` — und ${rest} weitere${rest === 1 ? 's' : ''}.` : '.'),
+      sound: 'default',
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+      channelId: CHANNEL,
+    },
+  });
+}
+
 export async function cancelReminder(): Promise<void> {
   try {
     await Notifications.cancelScheduledNotificationAsync(IDENTIFIER);

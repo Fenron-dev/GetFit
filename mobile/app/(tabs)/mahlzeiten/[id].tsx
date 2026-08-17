@@ -24,8 +24,16 @@ import { useTheme } from '../../../src/theme/ThemeProvider';
 import type { Nutrition } from '../../../src/types/domain';
 
 /** Screen 05 — Rezept-Detail mit Zutaten und Zubereitung. */
-export default function RecipeDetailRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function RecipeDetailRoute({
+  idOverride,
+  backLabel = 'Mahlzeiten',
+}: {
+  /** Gesetzt, wenn der Screen aus einem anderen Stack heraus benutzt wird. */
+  idOverride?: string;
+  backLabel?: string;
+} = {}) {
+  const params = useLocalSearchParams<{ id: string }>();
+  const id = idOverride ?? params.id;
   const router = useRouter();
   const { accent, settings } = useTheme();
   const { data: recipe, loading } = useQuery(() => getRecipe(id), [id]);
@@ -33,7 +41,7 @@ export default function RecipeDetailRoute() {
   if (loading || !recipe) {
     return (
       <Screen variant="detail">
-        <BackHeader label="Mahlzeiten" />
+        <BackHeader label={backLabel} />
         {!loading ? (
           <Text variant="body" color={colors.neutral[500]}>
             Dieses Rezept gibt es nicht mehr.
@@ -56,7 +64,7 @@ export default function RecipeDetailRoute() {
     <Screen variant="detail" bleed>
       <View style={styles.header}>
         <BackHeader
-          label="Mahlzeiten"
+          label={backLabel}
           right={
             <Touchable
               onPress={() => toggleRecipeFavorite(recipe.id)}

@@ -10,6 +10,7 @@ import {
   SettingsSwitch,
 } from '../../../src/components/SettingsRow';
 import { Icon } from '../../../src/components/icons';
+import { Touchable } from '../../../src/components/Surface';
 import { ActionButton } from '../../../src/components/ActionButton';
 import { useQuery } from '../../../src/hooks/useQuery';
 import { updateSettings } from '../../../src/data/repositories/settings';
@@ -34,6 +35,10 @@ export default function SettingsRoute() {
   const [busy, setBusy] = useState(false);
 
   const { data: recipeCount } = useQuery(() => stores.recipes.count(), []);
+  const { data: stockCount } = useQuery(async () => {
+    const items = await stores.stock.all();
+    return items.reduce((sum, item) => sum + item.portions, 0);
+  }, []);
 
   // Wie viele Übungen aus dem Datensatz warten noch auf ihr GIF?
   const { data: pendingGifs } = useQuery(async () => {
@@ -122,7 +127,11 @@ export default function SettingsRoute() {
     <Screen>
       <Text variant="screenTitle">Einstellungen</Text>
 
-      <View style={styles.profile}>
+      <Touchable
+        onPress={() => router.push('/mehr/profil')}
+        accessibilityLabel="Profil bearbeiten"
+        style={styles.profile}
+      >
         <View style={[styles.avatar, { borderColor: accent }]}>
           <Icon name="PersonSimple" size={22} color={accent} weight="fill" />
         </View>
@@ -131,14 +140,26 @@ export default function SettingsRoute() {
             {settings.profileName}
           </Text>
           <Text variant="meta" color={colors.neutral[500]} style={styles.profileMeta}>
-            {settings.showKcal ? `${settings.kcalGoal} kcal · ` : ''}
-            {settings.trainingsPerWeek} Trainings / Woche
+            {[
+              settings.weightKg ? `${settings.weightKg} kg` : null,
+              settings.showKcal ? `${settings.kcalGoal} kcal` : null,
+              `${settings.trainingsPerWeek} Trainings / Woche`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         </View>
-      </View>
+        <Icon name="CaretRight" size={15} color={colors.neutral[700]} />
+      </Touchable>
 
       <SettingsGroup label="Ziele">
-        <SettingsRow icon="Barbell" label="Tagesziel" value={`${settings.dailyGoalEntries} Einträge`} accented />
+        <SettingsRow
+          icon="Barbell"
+          label="Tagesziel"
+          value={`${settings.dailyGoalEntries} Einträge`}
+          accented
+          onPress={() => router.push('/mehr/profil')}
+        />
         <SettingsSwitch
           icon="Flame"
           label="Kalorien anzeigen"
@@ -162,6 +183,13 @@ export default function SettingsRoute() {
           value={`${datasetSize()} verfügbar`}
           accented
           onPress={() => router.push('/mehr/uebungen-datensatz')}
+        />
+        <SettingsRow
+          icon="Snowflake"
+          label="Vorrat"
+          value={stockCount ? `${stockCount} Portionen` : 'leer'}
+          accented={Boolean(stockCount)}
+          onPress={() => router.push('/mehr/vorrat')}
         />
         <SettingsRow
           icon="Image"

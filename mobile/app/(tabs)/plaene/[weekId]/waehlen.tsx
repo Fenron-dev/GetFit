@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../../../src/components/Screen';
 import { Text } from '../../../../src/components/Text';
@@ -17,7 +17,12 @@ import {
   listRecipesByCategory,
   recipeMeta,
 } from '../../../../src/data/repositories/recipes';
-import { addPlanTraining, setPlanDayMeal } from '../../../../src/data/repositories/plans';
+import { addPlanTraining, setPlanMeal } from '../../../../src/data/repositories/plans';
+import {
+  LOCATION_LABELS,
+  daysLeft,
+  listStock,
+} from '../../../../src/data/repositories/stock';
 import type { DayKey, MealSlot } from '../../../../src/types/domain';
 import { colors } from '../../../../src/theme/tokens';
 import { useTheme } from '../../../../src/theme/ThemeProvider';
@@ -31,15 +36,25 @@ import { useTheme } from '../../../../src/theme/ThemeProvider';
  * ohnehin gleich aufgebaut sind.
  */
 export default function PickerRoute() {
-  const { weekId, tag, art, slot } = useLocalSearchParams<{
+  const { weekId, tag, art, slot, eintrag } = useLocalSearchParams<{
     weekId: string;
     tag: DayKey;
     art: 'rezept' | 'uebung';
     slot?: MealSlot;
+    /** Der Planeintrag, der belegt werden soll. */
+    eintrag?: string;
   }>();
   const router = useRouter();
   const { settings } = useTheme();
   const [query, setQuery] = useState('');
+  const [prepFor, setPrepFor] = useState<string>();
+
+  // Die Frage nach dem Vorkochen kommt erst, wenn das Rezept steht —
+  // sonst stünde sie vor der Entscheidung, die sie betrifft.
+  useEffect(() => {
+    if (prepFor) askPrep(prepFor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prepFor]);
 
   const forRecipes = art === 'rezept';
 
@@ -52,15 +67,79 @@ export default function PickerRoute() {
     [query, forRecipes],
   );
 
-  async function chooseRecipe(recipeId: string) {
-    if (!slot) return;
-    await setPlanDayMeal(weekId, tag, slot, recipeId);
-    router.back();
+  /** Was gekocht im Haus ist — steht in der Liste ganz oben. */
+  const { data: stock } = useQuery(
+    () => (forRecipes ? listStock() : Promise.resolve([])),
+    [forRecipes],
+  );
+
+  /**
+   * Ein Rezept aus dem Vorrat ist fertig — es wird nur entnommen. Wird
+   * dagegen frisch gekocht, lohnt die Frage nach dem Vorkochen: das ist
+   * der Moment, in dem man weiß, ob sich der größere Topf lohnt.
+   */
+  async function chooseRecipe(recipeId: string, fromStockId?: string) {
+    if (!eintrag) return;
+
+    if (fromStockId) {
+      await setPlanMeal(weekId, tag, eintrag, {
+        recipeId,
+        fromStockId,
+        prep: undefined,
+      });
+      router.back();
+      return;
+    }
+
+    await setPlanMeal(weekId, tag, eintrag, {
+      recipeId,
+      fromStockId: undefined,
+    });
+    setPrepFor(recipeId);
+  }
+
+  /** Nach der Wahl: wie viel wird zusätzlich gekocht und wohin? */
+  function askPrep(recipeId: string) {
+    const recipe = groups
+      ?.flatMap((group) => group.items)
+      .find((item) => item.id === recipeId);
+
+    Alert.alert(
+      'Vorkochen?',
+      recipe
+        ? `${recipe.name} ist für ${recipe.servings} ${recipe.servings === 1 ? 'Portion' : 'Portionen'} angelegt.`
+        : undefined,
+      [
+        { text: 'Nur für heute', onPress: () => router.back() },
+        {
+          text: '+2 in den Kühlschrank',
+          onPress: async () => {
+            await setPlanMeal(weekId, tag, eintrag!, {
+              prep: { portions: 2, location: 'fridge' },
+            });
+            router.back();
+          },
+        },
+        {
+          text: '+2 in den Gefrierer',
+          onPress: async () => {
+            await setPlanMeal(weekId, tag, eintrag!, {
+              prep: { portions: 2, location: 'freezer' },
+            });
+            router.back();
+          },
+        },
+      ],
+    );
   }
 
   async function clearSlot() {
-    if (!slot) return;
-    await setPlanDayMeal(weekId, tag, slot, null);
+    if (!eintrag) return;
+    await setPlanMeal(weekId, tag, eintrag, {
+      recipeId: null,
+      fromStockId: undefined,
+      prep: undefined,
+    });
     router.back();
   }
 
@@ -88,6 +167,33 @@ export default function PickerRoute() {
           placeholder={forRecipes ? 'Rezept suchen' : 'Übung suchen'}
         />
       </View>
+
+      {forRecipes && stock && stock.length > 0 ? (
+        <View>
+          <SectionHead icon="Snowflake" label="Schon gekocht" />
+          <View style={styles.list}>
+            {stock.map((item) => {
+              const rest = daysLeft(item);
+              return (
+                <ListRow
+                  key={item.id}
+                  icon="Snowflake"
+                  title={item.recipeName}
+                  meta={`${item.portions} ${item.portions === 1 ? 'Portion' : 'Portionen'} · ${LOCATION_LABELS[item.location]} · ${
+                    rest < 0
+                      ? 'überfällig'
+                      : rest === 0
+                        ? 'heute verbrauchen'
+                        : `noch ${rest} ${rest === 1 ? 'Tag' : 'Tage'}`
+                  }`}
+                  thumbSize={44}
+                  onPress={() => chooseRecipe(item.recipeId, item.id)}
+                />
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
 
       {forRecipes
         ? groups

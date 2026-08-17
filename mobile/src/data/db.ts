@@ -13,7 +13,7 @@ import * as SQLite from 'expo-sqlite';
  */
 
 const DATABASE_NAME = 'getfit.db';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 let database: SQLite.SQLiteDatabase | null = null;
 
@@ -77,6 +77,15 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS idx_shopping_week ON shopping_lists (weekId);
 
+  CREATE TABLE IF NOT EXISTS stock (
+    id TEXT PRIMARY KEY NOT NULL,
+    recipeId TEXT,
+    location TEXT,
+    bestBefore TEXT,
+    data TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_stock_best ON stock (bestBefore);
+
   CREATE TABLE IF NOT EXISTS settings (
     id TEXT PRIMARY KEY NOT NULL,
     data TEXT NOT NULL
@@ -105,6 +114,36 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       ALTER TABLE exercises ADD COLUMN externalId TEXT;
       CREATE INDEX IF NOT EXISTS idx_exercises_external ON exercises (externalId);
     `);
+  }
+
+  if (current > 0 && current < 3) {
+    // Fassung 3: die vier festen Mahlzeiten-Felder eines Plantags werden
+    // zu einer Liste, damit ein Tag mehr als einen Snack tragen kann.
+    // Die Daten liegen als JSON in der Spalte `data`, also muss jede
+    // Zeile gelesen, umgeformt und zurückgeschrieben werden.
+    const rows = await handle.getAllAsync<{ id: string; data: string }>(
+      'SELECT id, data FROM plan_days',
+    );
+
+    const SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
+
+    for (const row of rows) {
+      const day = JSON.parse(row.data);
+      if (Array.isArray(day.meals)) continue;
+
+      day.meals = SLOTS.map((slot, index) => ({
+        id: `${day.id}:${slot}`,
+        slot,
+        recipeId: day.meals?.[slot] ?? null,
+        order: index,
+        servings: 1,
+      }));
+
+      await handle.runAsync('UPDATE plan_days SET data = ? WHERE id = ?', [
+        JSON.stringify(day),
+        row.id,
+      ]);
+    }
   }
 
   if (current < SCHEMA_VERSION) {

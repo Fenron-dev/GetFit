@@ -27,6 +27,7 @@ import {
   PersonSimpleThrow,
   PersonSimpleWalk,
   Plus,
+  Snowflake,
   type IconProps,
   type IconWeight,
 } from 'phosphor-react-native';
@@ -66,6 +67,7 @@ const REGISTRY = {
   PersonSimpleThrow,
   PersonSimpleWalk,
   Plus,
+  Snowflake,
 } satisfies Record<string, React.ComponentType<IconProps>>;
 
 export type IconName = keyof typeof REGISTRY;
@@ -104,4 +106,5 @@ export {
   ImageIcon,
   MagnifyingGlass,
   Plus,
+  Snowflake,
 };

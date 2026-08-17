@@ -71,6 +71,21 @@ hinter dem „+“ für Übungen und Rezepte, die Einkaufsliste aus dem
 Wochenplan und die Duplikat-Auflösung beim Import (überspringen,
 ersetzen, beide behalten).
 
+## Vorrat und Meal Prep
+
+Beim Einplanen einer Mahlzeit wird gefragt, ob mehr gekocht wird als an
+diesem Tag gegessen. Der Vorrat entsteht dann beim **Abhaken** — also
+wenn tatsächlich gekocht wurde, nicht schon beim Planen.
+
+Ein Posten kennt Ort (Kühlschrank, Gefrierer, Vorrat), Kochtag und ein
+Verbrauchsdatum aus einer Faustregel: 3 Tage im Kühlschrank, 90 im
+Gefrierer, 30 im Schrank. Drängt etwas, erscheint es auf dem Dashboard,
+steht in der Rezeptauswahl ganz oben und meldet sich als Benachrichtigung.
+
+Wird ein Eintrag aus dem Vorrat geplant, verbraucht das Abhaken die
+Portionen — und die Einkaufsliste lässt die Zutaten weg, weil nichts
+gekocht wird.
+
 ## Was noch aussteht
 
 **Feinschliff am Gerät.** Abstände und Proportionen stammen aus dem

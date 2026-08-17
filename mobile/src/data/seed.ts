@@ -1,3 +1,4 @@
+import { MEAL_SLOTS } from '../types/domain';
 import type {
   Exercise,
   PlanDay,
@@ -429,12 +430,13 @@ function buildDays(weekId: string, days: SeedDay[]): PlanDay[] {
       reps,
       order: index,
     })),
-    meals: {
-      breakfast: d.meals[0],
-      lunch: d.meals[1],
-      dinner: d.meals[2],
-      snack: d.meals[3],
-    },
+    meals: MEAL_SLOTS.map((slot, index) => ({
+      id: `${weekId}:${d.day}:${slot}`,
+      slot,
+      recipeId: d.meals[index],
+      order: index,
+      servings: 1,
+    })),
   }));
 }
 

@@ -114,6 +114,17 @@ export default function PlanListRoute() {
                   {counts.meals} {counts.meals === 1 ? 'Mahlzeit' : 'Mahlzeiten'}
                 </Text>
               </View>
+              <View style={styles.spacer} />
+              <Touchable
+                onPress={() => router.push(`/plaene/${week.id}/einkaufsliste`)}
+                accessibilityLabel={`Einkaufsliste für ${week.title}`}
+                style={styles.basket}
+              >
+                <Icon name="Basket" size={14} color={accent} />
+                <Text variant="small" color={colors.accent[300]}>
+                  Einkauf
+                </Text>
+              </Touchable>
             </View>
           </Touchable>
         ))}
@@ -139,7 +150,7 @@ export default function PlanListRoute() {
                 {template.title}
               </Text>
               <Text variant="meta" color={colors.neutral[600]} style={styles.weekMeta}>
-                {template.meta}
+                {describeTemplate(template)}
               </Text>
             </View>
             <Text variant="meta" color={colors.accent[300]}>
@@ -170,6 +181,32 @@ function StateBadge({ week }: { week: PlanWeek }) {
       </Text>
     </View>
   );
+}
+
+/**
+ * Was eine Vorlage mitbringt — im Entwurf stand dort ein fester Text,
+ * der nicht verriet, ob auch Mahlzeiten dabei sind.
+ */
+function describeTemplate(template: {
+  days: Record<string, { training: unknown[]; meals?: Record<string, string> } | undefined>;
+}): string {
+  const days = Object.values(template.days).filter(Boolean) as {
+    training: unknown[];
+    meals?: Record<string, string>;
+  }[];
+
+  const trainingDays = days.filter((day) => day.training.length > 0).length;
+  const meals = days.reduce(
+    (sum, day) => sum + Object.values(day.meals ?? {}).filter(Boolean).length,
+    0,
+  );
+
+  return [
+    trainingDays ? `${trainingDays} Trainingstage` : null,
+    meals ? `${meals} Mahlzeiten` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ') || 'leer';
 }
 
 /** Zählt, was in einer Woche tatsächlich verplant ist. */
@@ -215,7 +252,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayLabel: { fontSize: 10.5 },
-  counts: { flexDirection: 'row', gap: 16, marginTop: 12 },
+  counts: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 12 },
+  spacer: { flex: 1 },
+  basket: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.accent[700],
+  },
   count: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   templateRow: {
     flexDirection: 'row',

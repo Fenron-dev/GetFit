@@ -32,6 +32,8 @@ export interface Exercise {
   /** Frei, weil Übungen entweder Wiederholungen oder Zeit führen: "12", "45s". */
   defaultReps: string;
   restSeconds: number;
+  /** Geschätzter Verbrauch je Durchgang, falls hinterlegt. */
+  kcalBurn?: number;
   description: string;
   /** Phosphor-Icon-Name aus dem Mockup, z. B. "PersonSimpleWalk". */
   icon: string;
@@ -121,6 +123,34 @@ export interface PlanTrainingItem {
   order: number;
 }
 
+/** Wo eine gekochte Portion liegt. */
+export const LOCATIONS = ['fridge', 'freezer', 'pantry'] as const;
+export type StockLocation = (typeof LOCATIONS)[number];
+
+/**
+ * Eine geplante Mahlzeit. Früher waren das vier feste Felder; jetzt ist
+ * es eine Liste, damit ein Tag auch zwei Snacks tragen kann. Der Slot
+ * bleibt als Einordnung — er bestimmt Reihenfolge und Beschriftung.
+ */
+export interface PlanMealEntry {
+  id: string;
+  slot: MealSlot;
+  /** `null` heißt „Rezept wählen". */
+  recipeId: string | null;
+  order: number;
+  /** Optionale Uhrzeit "12:30" — nur gesetzt, wenn erinnert werden soll. */
+  time?: string;
+  /** Wie viele Portionen an diesem Tag gegessen werden. */
+  servings: number;
+  /**
+   * Beim Kochen zusätzlich einzulagern: „koche 4, iss 2, friere 2 ein".
+   * Der Vorratsposten entsteht, sobald der Eintrag abgehakt wird.
+   */
+  prep?: { portions: number; location: StockLocation };
+  /** Verbraucht einen Vorratsposten, statt neu zu kochen. */
+  fromStockId?: string;
+}
+
 /** Eine Zeile je Woche und Tag. Zusammengesetzter Schlüssel `${weekId}:${day}`. */
 export interface PlanDay {
   id: string;
@@ -129,8 +159,27 @@ export interface PlanDay {
   /** "Push · 45 Min", "Ruhetag" */
   note: string;
   training: PlanTrainingItem[];
-  /** Slot → Rezept-ID. `null` heißt „Rezept wählen". */
-  meals: Record<MealSlot, string | null>;
+  meals: PlanMealEntry[];
+}
+
+/**
+ * Was gekocht im Kühlschrank, Gefrierer oder Vorratsschrank liegt.
+ *
+ * Der Rezeptname wird als Momentaufnahme mitgeführt: ein später
+ * gelöschtes Rezept soll den Vorrat nicht unlesbar machen.
+ */
+export interface StockItem {
+  id: string;
+  recipeId: string;
+  recipeName: string;
+  portions: number;
+  location: StockLocation;
+  /** ISO-Datum des Kochtags. */
+  cookedOn: string;
+  /** ISO-Datum, bis wann es verbraucht sein sollte. */
+  bestBefore: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 /** Vorlagen aus dem Pläne-Screen: ein Bauplan, aus dem eine Woche
@@ -165,6 +214,8 @@ export interface DayLogEntry {
   slot?: MealSlot;
   done: boolean;
   order: number;
+  /** Aus welchem Planeintrag der Tag entstand — für den Vorrat beim Abhaken. */
+  planEntryId?: string;
 }
 
 /** Ein Datensatz je Kalendertag; `date` ist der Schlüssel ("2026-08-10"). */
@@ -220,6 +271,9 @@ export interface Settings {
   /** Einzeiliger Datensatz, Schlüssel ist immer "settings". */
   id: 'settings';
   profileName: string;
+  /** Körpergewicht in kg — Grundlage für den geschätzten Verbrauch. */
+  weightKg?: number;
+  heightCm?: number;
   kcalGoal: number;
   /** Globaler Schalter aus dem Mockup: blendet alle kcal-Angaben aus. */
   showKcal: boolean;

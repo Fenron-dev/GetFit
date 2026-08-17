@@ -12,6 +12,9 @@ import Inter_500Medium from '@expo-google-fonts/inter/500Medium/Inter_500Medium.
 import Inter_600SemiBold from '@expo-google-fonts/inter/600SemiBold/Inter_600SemiBold.ttf';
 
 import { bootstrapDatabase } from '../src/data/bootstrap';
+import { getSettings } from '../src/data/repositories/settings';
+import { listUrgentStock } from '../src/data/repositories/stock';
+import { scheduleStockReminder } from '../src/lib/reminders';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { colors, fonts, textStyles } from '../src/theme/tokens';
 
@@ -31,7 +34,16 @@ export default function RootLayout() {
 
   useEffect(() => {
     bootstrapDatabase()
-      .then(() => setDatabaseReady(true))
+      .then(async () => {
+        setDatabaseReady(true);
+
+        // Was im Vorrat drängt, ändert sich täglich — die Meldung wird
+        // deshalb bei jedem Start neu gestellt statt einmal für immer.
+        const settings = await getSettings();
+        if (settings.reminderEnabled) {
+          await scheduleStockReminder(settings.reminderTime, await listUrgentStock());
+        }
+      })
       .catch((cause: unknown) => {
         setError(cause instanceof Error ? cause.message : String(cause));
       });

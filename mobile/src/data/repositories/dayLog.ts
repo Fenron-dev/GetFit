@@ -1,8 +1,9 @@
 import { newId, now } from '../db';
 import { stores } from '../stores';
 import { dayKeyOf, fromIsoDate, lastDays, today } from '../../lib/date';
-import { MEAL_SLOTS, type DayLog, type DayLogEntry, type StreakLevel } from '../../types/domain';
-import { getPlanDay, getActiveWeek } from './plans';
+import type { DayLog, DayLogEntry, StreakLevel } from '../../types/domain';
+import { getPlanDay, getActiveWeek, setPlanMeal } from './plans';
+import { addStock, consumeStock } from './stock';
 import { SLOT_LABELS } from './recipes';
 
 /**
@@ -52,36 +53,91 @@ async function buildEntriesFromPlan(date: string): Promise<DayLogEntry[]> {
     });
   });
 
-  for (const slot of MEAL_SLOTS) {
-    const recipeId = planDay.meals[slot];
-    if (!recipeId) continue;
-    const recipe = await stores.recipes.get(recipeId);
+  for (const meal of [...planDay.meals].sort((a, b) => a.order - b.order)) {
+    if (!meal.recipeId) continue;
+    const recipe = await stores.recipes.get(meal.recipeId);
     if (!recipe) continue;
     entries.push({
       id: newId('log'),
       kind: 'meal',
       refId: recipe.id,
-      title: SLOT_LABELS[slot],
+      title: meal.time ? `${SLOT_LABELS[meal.slot]} · ${meal.time}` : SLOT_LABELS[meal.slot],
       meta: recipe.name,
       kcal: recipe.nutrition.kcal,
-      slot,
+      slot: meal.slot,
       done: false,
       order: entries.length,
+      planEntryId: meal.id,
     });
   }
 
   return entries;
 }
 
+/**
+ * Abhaken. Wurde für die Mahlzeit beim Einplanen ein Prep-Anteil gesetzt
+ * („koche 4, iss 2, friere 2 ein"), entsteht in diesem Moment der
+ * Vorratsposten — gekocht wird schließlich jetzt.
+ *
+ * Wird das Häkchen wieder entfernt, verschwindet der Posten nicht: er
+ * steht dann eben im Kühlschrank, und das lässt sich dort korrigieren.
+ */
 export async function toggleDayEntry(date: string, entryId: string): Promise<void> {
   const log = await ensureDayLog(date);
+  const entry = log.entries.find((item) => item.id === entryId);
+  const wirdErledigt = entry ? !entry.done : false;
+
   await stores.dayLogs.put({
     ...log,
-    entries: log.entries.map((entry) =>
-      entry.id === entryId ? { ...entry, done: !entry.done } : entry,
+    entries: log.entries.map((item) =>
+      item.id === entryId ? { ...item, done: !item.done } : item,
     ),
     updatedAt: now(),
   });
+
+  if (wirdErledigt && entry?.kind === 'meal' && entry.planEntryId) {
+    await settleMeal(date, entry.planEntryId, entry.refId);
+  }
+}
+
+/**
+ * Was beim Abhaken einer Mahlzeit mit dem Vorrat geschieht:
+ *
+ *  - kommt sie aus dem Vorrat, werden die Portionen entnommen
+ *  - sieht sie einen Prep-Anteil vor, entsteht ein neuer Posten
+ *
+ * Beides wird danach aus dem Planeintrag entfernt, damit ein zweites
+ * Abhaken nicht doppelt bucht.
+ */
+async function settleMeal(
+  date: string,
+  planEntryId: string,
+  recipeId: string,
+): Promise<void> {
+  const week = await getActiveWeek();
+  if (!week) return;
+
+  const planDay = await getPlanDay(week.id, dayKeyOf(fromIsoDate(date)));
+  const meal = planDay?.meals.find((item) => item.id === planEntryId);
+  if (!meal || !planDay) return;
+
+  if (meal.fromStockId) {
+    await consumeStock(meal.fromStockId, meal.servings);
+    await setPlanMeal(week.id, planDay.day, planEntryId, { fromStockId: undefined });
+    return;
+  }
+
+  if (meal.prep && meal.prep.portions > 0) {
+    const recipe = await stores.recipes.get(recipeId);
+    await addStock({
+      recipeId,
+      recipeName: recipe?.name ?? 'Unbekanntes Rezept',
+      portions: meal.prep.portions,
+      location: meal.prep.location,
+      cookedOn: date,
+    });
+    await setPlanMeal(week.id, planDay.day, planEntryId, { prep: undefined });
+  }
 }
 
 /** „Zum Heute-Plan hinzufügen" aus dem Übungs- bzw. Rezept-Detail. */

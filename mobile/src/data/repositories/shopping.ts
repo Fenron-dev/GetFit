@@ -1,7 +1,7 @@
 import { newId, now } from '../db';
 import { stores } from '../stores';
 import { aggregateIngredients, scaleIngredient } from '../../lib/ingredients';
-import { MEAL_SLOTS, type DayKey, type ShoppingList } from '../../types/domain';
+import type { DayKey, ShoppingList } from '../../types/domain';
 import { listPlanDays } from './plans';
 
 /**
@@ -28,24 +28,34 @@ export async function generateShoppingList(
     ? planDays.filter((planDay) => days.includes(planDay.day))
     : planDays;
 
-  const recipeIds = relevant.flatMap((planDay) =>
-    MEAL_SLOTS.map((slot) => planDay.meals[slot]).filter(
-      (id): id is string => id !== null,
-    ),
+  /**
+   * Was tatsächlich gekocht wird: geplante Portionen plus das, was
+   * eingelagert werden soll. Ein Eintrag, der aus dem Vorrat kommt,
+   * braucht dagegen gar keinen Einkauf.
+   */
+  const cooking = relevant.flatMap((planDay) =>
+    planDay.meals
+      .filter((entry) => entry.recipeId && !entry.fromStockId)
+      .map((entry) => ({
+        recipeId: entry.recipeId as string,
+        portions: entry.servings + (entry.prep?.portions ?? 0),
+      })),
   );
 
+  const recipeIds = cooking.map((entry) => entry.recipeId);
   const unique = [...new Set(recipeIds)];
   const recipes = await stores.recipes.getMany(unique);
   const byId = new Map(
     recipes.filter((r) => r !== undefined).map((r) => [r.id, r]),
   );
 
-  // Ein Slot ist eine Portion. Ein Rezept für vier Portionen, das an zwei
-  // Tagen eingeplant ist, geht also mit 2/4 seiner Zutaten in die Liste.
-  const entries = recipeIds.flatMap((recipeId) => {
+  // Die Zutaten werden auf die tatsächlich gekochten Portionen skaliert:
+  // ein Rezept für vier Portionen, von dem zwei gebraucht werden, geht
+  // mit der Hälfte seiner Mengen in die Liste.
+  const entries = cooking.flatMap(({ recipeId, portions }) => {
     const recipe = byId.get(recipeId);
     if (!recipe) return [];
-    const factor = recipe.servings > 0 ? 1 / recipe.servings : 1;
+    const factor = recipe.servings > 0 ? portions / recipe.servings : portions;
     return recipe.ingredients.map((item) => ({
       ingredient: scaleIngredient(item, factor),
       recipeId,
