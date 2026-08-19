@@ -86,6 +86,19 @@ Wird ein Eintrag aus dem Vorrat geplant, verbraucht das Abhaken die
 Portionen — und die Einkaufsliste lässt die Zutaten weg, weil nichts
 gekocht wird.
 
+## Vorausplanung
+
+Der Pläne-Screen gruppiert nach Zeit: die laufende Woche, danach die
+vorausgeplanten, ganz unten die vergangenen — eingeklappt, damit sie den
+Blick nach vorn nicht zustellen. Die Einordnung wird aus dem Datum
+abgeleitet („In 3 Wochen"), nicht gespeichert; ein von Hand gesetzter
+Status veraltet sonst still.
+
+Der Anlegen-Knopf zählt hinter der letzten vorhandenen Woche weiter statt
+immer die laufende zu nehmen. „Vier Wochen im Voraus anlegen" legt sie
+auf einen Schlag an. Jeder Tag im Streifen einer Wochenkarte ist
+antippbar und führt direkt in diesen Tag.
+
 ## Was noch aussteht
 
 **Feinschliff am Gerät.** Abstände und Proportionen stammen aus dem

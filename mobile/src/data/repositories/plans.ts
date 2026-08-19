@@ -1,6 +1,13 @@
 import { newId, now, transaction } from '../db';
 import { stores } from '../stores';
-import { addDays, formatWeekRange, isoWeekNumber, startOfWeek, today } from '../../lib/date';
+import {
+  addDays,
+  formatWeekRange,
+  fromIsoDate,
+  isoWeekNumber,
+  startOfWeek,
+  today,
+} from '../../lib/date';
 import {
   DAY_KEYS,
   MEAL_SLOTS,
@@ -247,6 +254,64 @@ export async function updatePlanDayNote(
   if (planDay) await stores.planDays.put({ ...planDay, note });
 }
 
+/**
+ * Legt die nächsten noch fehlenden Wochen an.
+ *
+ * Ohne das griff der Anlegen-Knopf immer auf die laufende Woche und legte
+ * sie ein zweites Mal an, sobald es sie schon gab. Jetzt wird lückenlos
+ * hinter der letzten vorhandenen weitergezählt — und wo eine Lücke
+ * klafft, wird sie geschlossen.
+ */
+export async function createUpcomingWeeks(count = 1): Promise<string[]> {
+  const weeks = await listPlanWeeks();
+  const vorhanden = new Set(weeks.map((week) => week.startDate));
+
+  const thisMonday = startOfWeek(today());
+  const letzter = weeks
+    .map((week) => week.startDate)
+    .filter((start) => start >= thisMonday)
+    .sort()
+    .at(-1);
+
+  let cursor = letzter ? addDays(letzter, 7) : thisMonday;
+  const angelegt: string[] = [];
+
+  while (angelegt.length < count) {
+    if (!vorhanden.has(cursor)) {
+      angelegt.push(await createPlanWeek({ startDate: cursor }));
+      vorhanden.add(cursor);
+    }
+    cursor = addDays(cursor, 7);
+  }
+
+  return angelegt;
+}
+
+/**
+ * Wie die Woche zeitlich liegt. Wird für die Anzeige abgeleitet statt
+ * gespeichert — ein von Hand gesetzter Status veraltet sonst still.
+ */
+export type WeekRelation = 'laufend' | 'kommend' | 'vergangen';
+
+export function weekRelation(week: PlanWeek, from = today()): WeekRelation {
+  const monday = startOfWeek(from);
+  if (week.startDate === monday) return 'laufend';
+  return week.startDate > monday ? 'kommend' : 'vergangen';
+}
+
+/** "Diese Woche", "In 2 Wochen", "Vor 1 Woche" */
+export function weekDistanceLabel(week: PlanWeek, from = today()): string {
+  const monday = startOfWeek(from);
+  const wochen = Math.round(
+    (fromIsoDate(week.startDate).getTime() - fromIsoDate(monday).getTime()) / (7 * 86400000),
+  );
+
+  if (wochen === 0) return 'Diese Woche';
+  if (wochen === 1) return 'Nächste Woche';
+  if (wochen === -1) return 'Letzte Woche';
+  return wochen > 0 ? `In ${wochen} Wochen` : `Vor ${-wochen} Wochen`;
+}
+
 export function listTemplates(): Promise<PlanTemplate[]> {
   return stores.planTemplates.all();
 }
@@ -297,11 +362,5 @@ export function dayFillFlags(days: PlanDay[]): boolean[] {
     );
   });
 }
-
-export const PLAN_STATE_LABELS: Record<PlanWeek['state'], string> = {
-  active: 'Aktiv',
-  planned: 'Geplant',
-  draft: 'Entwurf',
-};
 
 export { formatWeekRange };
